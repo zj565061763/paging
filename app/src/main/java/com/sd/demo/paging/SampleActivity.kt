@@ -3,22 +3,17 @@ package com.sd.demo.paging
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -47,21 +42,21 @@ private fun Content(
   modifier: Modifier = Modifier,
   vm: SampleViewModel = viewModel(),
 ) {
-  val state by vm.stateFlow.collectAsStateWithLifecycle()
+  val pagingState by vm.stateFlow.collectAsStateWithLifecycle()
 
   val lazyListState = rememberLazyListState()
   lazyListState.FAppend { vm.append() }
 
   PullToRefreshBox(
     modifier = modifier.fillMaxSize(),
-    isRefreshing = state.isRefreshing,
+    isRefreshing = pagingState.isRefreshing,
     onRefresh = { vm.refresh() },
   ) {
     LazyColumn(
       modifier = Modifier.fillMaxSize(),
       state = lazyListState,
     ) {
-      items(state.data) { item ->
+      items(pagingState.data) { item ->
         Button(
           modifier = Modifier.fillParentMaxWidth(),
           onClick = {}
@@ -70,18 +65,12 @@ private fun Content(
         }
       }
 
-      if (state.data.isNotEmpty()) {
+      if (pagingState.data.isNotEmpty()) {
         item {
-          Box(
-            modifier = Modifier
-              .fillParentMaxWidth()
-              .heightIn(100.dp),
-            contentAlignment = Alignment.Center,
-          ) {
-            if (state.isAppending) {
-              CircularProgressIndicator()
-            }
-          }
+          AppendItem(
+            modifier = Modifier.fillParentMaxWidth(),
+            state = pagingState,
+          )
         }
       }
     }
@@ -115,9 +104,13 @@ internal class SampleViewModel : ViewModel() {
   fun append() {
     logMsg { "append" }
     viewModelScope.launch {
-      _paging.append {
+      _paging.append { page ->
         delay(1_000)
-        List(10) { (it + 1).toString() }
+        if (page == 5) {
+          emptyList()
+        } else {
+          List(10) { (it + 1).toString() }
+        }
       }
     }
   }
