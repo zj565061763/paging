@@ -91,9 +91,9 @@ internal class SampleViewModel : ViewModel() {
 
   /** 刷新 */
   fun refresh() {
-    logMsg { "refresh" }
     viewModelScope.launch {
-      _paging.refresh {
+      _paging.refresh { page ->
+        logMsg { "append $page" }
         delay(1_000)
         List(10) { (it + 1).toString() }
       }
@@ -102,14 +102,15 @@ internal class SampleViewModel : ViewModel() {
 
   /** 加载更多 */
   fun append() {
-    logMsg { "append" }
+
     viewModelScope.launch {
       _paging.append { page ->
+        logMsg { "append $page" }
         delay(1_000)
-        if (page == 5) {
-          emptyList()
-        } else {
-          List(10) { (it + 1).toString() }
+        when (page) {
+          4 -> loadOrThrow()
+          5 -> emptyList()
+          else -> List(10) { (it + 1).toString() }
         }
       }
     }
@@ -117,5 +118,13 @@ internal class SampleViewModel : ViewModel() {
 
   init {
     refresh()
+  }
+}
+
+private fun loadOrThrow(): List<String> {
+  return if (listOf(true, false).random()) {
+    List(10) { (it + 1).toString() }
+  } else {
+    error("load error")
   }
 }
