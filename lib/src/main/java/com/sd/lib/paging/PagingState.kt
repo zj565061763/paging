@@ -19,6 +19,14 @@ data class PagingState<T>(
   val isAppending: Boolean = false,
 )
 
+/** 是否显示加载数据为空 */
+val PagingState<*>.showLoadEmpty: Boolean
+  get() = data.isEmpty() && loadResult?.isSuccess == true
+
+/** 是否显示加载数据失败 */
+val PagingState<*>.showLoadFailure: Boolean
+  get() = data.isEmpty() && loadResult?.isFailure == true
+
 /** 是否显示加载更多没有数据了 */
 val PagingState<*>.showAppendNoMoreData: Boolean
   get() = data.isNotEmpty() && loadSize == 0
@@ -28,11 +36,3 @@ val PagingState<*>.showAppendFailure: Boolean
   get() = data.isNotEmpty()
     && (loadPage != null && loadPage > refreshPage)
     && loadResult?.isFailure == true
-
-/** 是否显示加载数据为空 */
-val PagingState<*>.showLoadEmpty: Boolean
-  get() = data.isEmpty() && loadResult?.isSuccess == true
-
-/** 是否显示加载数据失败 */
-val PagingState<*>.showLoadFailure: Boolean
-  get() = data.isEmpty() && loadResult?.isFailure == true

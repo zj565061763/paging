@@ -29,7 +29,7 @@ fun AppendItem(
   onNoMoreData: @Composable () -> Unit = {
     Text(text = "没有更多数据了")
   },
-  onFailure: @Composable () -> Unit = {
+  onFailure: @Composable (Throwable) -> Unit = {
     Text(text = "加载失败")
   },
 ) {
@@ -40,7 +40,7 @@ fun AppendItem(
     when {
       state.isAppending -> onLoading()
       state.showAppendNoMoreData -> onNoMoreData()
-      state.showAppendFailure -> onFailure()
+      state.showAppendFailure -> state.loadResult?.onFailure { onFailure(it) }
     }
   }
 }
