@@ -102,7 +102,6 @@ internal class SampleViewModel : ViewModel() {
 
   /** 加载更多 */
   fun append() {
-
     viewModelScope.launch {
       _paging.append { page ->
         logMsg { "append $page" }
