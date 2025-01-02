@@ -93,7 +93,7 @@ internal class SampleViewModel : ViewModel() {
   fun refresh() {
     viewModelScope.launch {
       _paging.refresh { page ->
-        logMsg { "append $page" }
+        logMsg { "refresh $page" }
         delay(1_000)
         List(10) { (it + 1).toString() }
       }
