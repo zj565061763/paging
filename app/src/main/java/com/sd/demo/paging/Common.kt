@@ -2,12 +2,28 @@ package com.sd.demo.paging
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import kotlinx.coroutines.CoroutineScope
 
 @Composable
-internal fun LazyListState.reachedBottom(): Boolean {
-  return remember {
+fun LazyListState.FAppend(
+  append: suspend CoroutineScope.() -> Unit,
+) {
+  if (reachedAppend()) {
+    val appendUpdated by rememberUpdatedState(append)
+    LaunchedEffect(Unit) {
+      appendUpdated()
+    }
+  }
+}
+
+@Composable
+private fun LazyListState.reachedAppend(): Boolean {
+  return remember(this) {
     derivedStateOf {
       val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
       if (lastVisibleItem == null) {
