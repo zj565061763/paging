@@ -9,13 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class SampleViewModel : ViewModel() {
-  private val _list = mutableListOf<String>()
-  private val _paging: FPaging<String> = FPaging { page, pageData ->
-    _list.apply {
-      if (page == refreshPage) clear()
-      addAll(pageData)
-    }.toList()
-  }
+  private val _paging: FPaging<String> = FPaging()
 
   val stateFlow: StateFlow<PagingState<String>>
     get() = _paging.stateFlow

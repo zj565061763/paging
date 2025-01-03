@@ -63,7 +63,7 @@ interface FPaging<T> {
 fun <T> FPaging(
   initial: List<T> = emptyList(),
   refreshPage: Int = 1,
-  dataHandler: suspend FPaging.LoadScope<T>.(page: Int, pageData: List<T>) -> List<T>?,
+  dataHandler: PagingDataHandler<T> = DefaultPagingDataHandler(),
 ): FPaging<T> {
   return PagingImpl(
     initial = initial,
@@ -77,7 +77,7 @@ fun <T> FPaging(
 private class PagingImpl<T>(
   initial: List<T>,
   refreshPage: Int,
-  private val dataHandler: suspend FPaging.LoadScope<T>.(page: Int, pageData: List<T>) -> List<T>?,
+  private val dataHandler: PagingDataHandler<T>,
 ) : FPaging<T>, FPaging.LoadScope<T> {
 
   private val _refreshMutator = MutatorMutex()
@@ -89,6 +89,10 @@ private class PagingImpl<T>(
       refreshPage = refreshPage,
     )
   )
+
+  init {
+    dataHandler.getPagingState = { _stateFlow.value }
+  }
 
   override val state: PagingState<T>
     get() = _stateFlow.value
@@ -188,7 +192,7 @@ private class PagingImpl<T>(
 
   private suspend fun handleLoadData(page: Int, data: List<T>) {
     currentCoroutineContext().ensureActive()
-    val totalData = dataHandler(page, data)
+    val totalData = dataHandler.handlePageData(page, data)
 
     currentCoroutineContext().ensureActive()
     _stateFlow.update { state ->

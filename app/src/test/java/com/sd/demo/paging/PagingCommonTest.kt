@@ -7,7 +7,7 @@ import org.junit.Test
 class PagingCommonTest {
   @Test
   fun `test default state`() {
-    val paging = FPaging<Int> { _, _ -> null }
+    val paging = FPaging<Int>()
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)
       assertEquals(1, refreshPage)

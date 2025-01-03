@@ -16,13 +16,7 @@ import org.junit.Test
 class PagingAppendTest {
   @Test
   fun `test append success`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     // 1
     paging.append { page ->
@@ -95,13 +89,7 @@ class PagingAppendTest {
 
   @Test
   fun `test append failure`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     paging.append {
       error("append failure")
@@ -121,13 +109,7 @@ class PagingAppendTest {
 
   @Test
   fun `test append cancel`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     launch {
       paging.append {
@@ -150,13 +132,7 @@ class PagingAppendTest {
 
   @Test
   fun `test append when appending`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     val loadJob = launch {
       paging.append {
@@ -186,13 +162,7 @@ class PagingAppendTest {
 
   @Test
   fun `test append when refreshing`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     val loadJob = launch {
       paging.refresh {
@@ -222,7 +192,7 @@ class PagingAppendTest {
 
   @Test
   fun `test append notify loading`() = runTest {
-    val paging = FPaging<Int> { _, _ -> null }
+    val paging = FPaging<Int>()
     assertEquals(false, paging.state.isAppending)
 
     launch {
@@ -241,13 +211,7 @@ class PagingAppendTest {
 
   @Test
   fun `test append flow`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     paging.stateFlow.test {
       with(awaitItem()) {

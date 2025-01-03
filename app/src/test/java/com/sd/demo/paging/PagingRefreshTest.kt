@@ -15,13 +15,7 @@ import org.junit.Test
 class PagingRefreshTest {
   @Test
   fun `test refresh success`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     paging.refresh { page ->
       assertEquals(refreshPage, page)
@@ -45,13 +39,7 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh failure`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     paging.refresh {
       error("refresh failure")
@@ -71,13 +59,7 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh cancel`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     launch {
       paging.refresh {
@@ -100,13 +82,7 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh when refreshing`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     launch {
       paging.refresh {
@@ -129,13 +105,7 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh when appending`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     launch {
       paging.append {
@@ -158,7 +128,7 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh notify loading`() = runTest {
-    val paging = FPaging<Int> { _, _ -> null }
+    val paging = FPaging<Int>()
     assertEquals(false, paging.state.isRefreshing)
 
     launch {
@@ -177,13 +147,7 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh flow`() = runTest {
-    val list = mutableListOf<Int>()
-    val paging = FPaging { page, pageData ->
-      list.apply {
-        if (page == refreshPage) clear()
-        addAll(pageData)
-      }
-    }
+    val paging = FPaging<Int>()
 
     paging.stateFlow.test {
       with(awaitItem()) {
