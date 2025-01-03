@@ -40,7 +40,7 @@ fun AppendItem(
     when {
       state.isAppending -> onLoading()
       state.showAppendNoMoreData -> onNoMoreData()
-      state.showAppendFailure -> state.loadResult?.onFailure { onFailure(it) }
+      state.showAppendFailure -> state.result?.onFailure { onFailure(it) }
     }
   }
 }

@@ -22,13 +22,13 @@ class PagingRefreshTest {
       assertEquals(true, paging.state.isRefreshing)
       assertEquals(false, paging.state.isAppending)
       listOf(1, 2)
-    }.also { result ->
-      assertEquals(listOf(1, 2), result.getOrThrow())
+    }.also { refresh ->
+      assertEquals(listOf(1, 2), refresh.getOrThrow())
     }
 
     with(paging.state) {
       assertEquals(listOf(1, 2), data)
-      assertEquals(true, loadResult?.isSuccess)
+      assertEquals(true, result?.isSuccess)
       assertEquals(refreshPage, loadPage)
       assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
@@ -48,7 +48,7 @@ class PagingRefreshTest {
 
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)
-      assertEquals("refresh failure", loadResult!!.exceptionOrNull()!!.message)
+      assertEquals("refresh failure", result!!.exceptionOrNull()!!.message)
       assertEquals(null, loadPage)
       assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
@@ -71,7 +71,7 @@ class PagingRefreshTest {
 
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
+      assertEquals(null, result)
       assertEquals(null, loadPage)
       assertEquals(null, loadSize)
       assertEquals(false, isRefreshing)
@@ -94,7 +94,7 @@ class PagingRefreshTest {
 
     with(paging.state) {
       assertEquals(listOf(3, 4), data)
-      assertEquals(true, loadResult?.isSuccess)
+      assertEquals(true, result?.isSuccess)
       assertEquals(refreshPage, loadPage)
       assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
@@ -117,7 +117,7 @@ class PagingRefreshTest {
 
     with(paging.state) {
       assertEquals(listOf(3, 4), data)
-      assertEquals(true, loadResult?.isSuccess)
+      assertEquals(true, result?.isSuccess)
       assertEquals(refreshPage, loadPage)
       assertEquals(2, loadSize)
       assertEquals(false, isRefreshing)
@@ -151,7 +151,7 @@ class PagingRefreshTest {
     paging.stateFlow.test {
       with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, loadResult)
+        assertEquals(null, result)
         assertEquals(null, loadPage)
         assertEquals(null, loadSize)
         assertEquals(false, isRefreshing)
@@ -162,7 +162,7 @@ class PagingRefreshTest {
 
       with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, loadResult)
+        assertEquals(null, result)
         assertEquals(null, loadPage)
         assertEquals(null, loadSize)
         assertEquals(true, isRefreshing)
@@ -170,7 +170,7 @@ class PagingRefreshTest {
       }
       with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
-        assertEquals(true, loadResult?.isSuccess)
+        assertEquals(true, result?.isSuccess)
         assertEquals(refreshPage, loadPage)
         assertEquals(2, loadSize)
         assertEquals(true, isRefreshing)
@@ -178,7 +178,7 @@ class PagingRefreshTest {
       }
       with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
-        assertEquals(true, loadResult?.isSuccess)
+        assertEquals(true, result?.isSuccess)
         assertEquals(refreshPage, loadPage)
         assertEquals(2, loadSize)
         assertEquals(false, isRefreshing)
