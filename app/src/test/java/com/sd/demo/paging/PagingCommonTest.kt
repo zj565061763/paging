@@ -12,8 +12,8 @@ class PagingCommonTest {
       assertEquals(emptyList<Int>(), data)
       assertEquals(1, refreshPage)
       assertEquals(null, result)
-      assertEquals(null, loadPage)
-      assertEquals(null, loadSize)
+      assertEquals(null, successPage)
+      assertEquals(null, successPageSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }

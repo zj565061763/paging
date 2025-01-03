@@ -9,10 +9,10 @@ data class PagingState<T>(
   /** 最后一次加载的结果 */
   val result: Result<Unit>? = null,
 
-  /** 最后一次加载的页码 */
-  val loadPage: Int? = null,
-  /** 最后一次加载的数据个数 */
-  val loadSize: Int? = null,
+  /** 最后一次加载成功的页码 */
+  val successPage: Int? = null,
+  /** 最后一次加载成功的页码对应的数据个数 */
+  val successPageSize: Int? = null,
 
   /** 是否正在刷新 */
   val isRefreshing: Boolean = false,
@@ -30,10 +30,10 @@ val PagingState<*>.showLoadFailure: Boolean
 
 /** 是否显示加载更多没有数据了 */
 val PagingState<*>.showAppendNoMoreData: Boolean
-  get() = data.isNotEmpty() && loadSize == 0
+  get() = data.isNotEmpty() && successPageSize == 0
 
 /** 是否显示加载更多失败 */
 val PagingState<*>.showAppendFailure: Boolean
   get() = data.isNotEmpty()
-    && (loadPage != null && loadPage > refreshPage)
+    && (successPage != null && successPage > refreshPage)
     && result?.isFailure == true
