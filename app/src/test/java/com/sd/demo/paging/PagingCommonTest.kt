@@ -11,7 +11,7 @@ class PagingCommonTest {
     with(paging.state) {
       assertEquals(1, refreshPage)
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, result)
+      assertEquals(null, loadResult)
       assertEquals(null, successPage)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)

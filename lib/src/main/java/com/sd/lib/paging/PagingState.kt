@@ -8,7 +8,7 @@ data class PagingState<T>(
   val data: List<T> = emptyList(),
 
   /** 最后一次加载的结果 */
-  val result: Result<Unit>? = null,
+  val loadResult: Result<Unit>? = null,
 
   /** 最后一次加载成功的页 */
   val successPage: SuccessPage? = null,
@@ -29,11 +29,11 @@ data class SuccessPage(
 
 /** 是否显示加载数据为空 */
 val PagingState<*>.showLoadEmpty: Boolean
-  get() = data.isEmpty() && result?.isSuccess == true
+  get() = data.isEmpty() && loadResult?.isSuccess == true
 
 /** 是否显示加载数据失败 */
 val PagingState<*>.showLoadFailure: Boolean
-  get() = data.isEmpty() && result?.isFailure == true
+  get() = data.isEmpty() && loadResult?.isFailure == true
 
 /** 是否显示加载更多没有数据了 */
 val PagingState<*>.showAppendNoMoreData: Boolean
@@ -42,5 +42,5 @@ val PagingState<*>.showAppendNoMoreData: Boolean
 /** 是否显示加载更多失败 */
 val PagingState<*>.showAppendFailure: Boolean
   get() = data.isNotEmpty()
-    && result?.isFailure == true
+    && loadResult?.isFailure == true
     && (successPage != null && successPage.page > refreshPage)
