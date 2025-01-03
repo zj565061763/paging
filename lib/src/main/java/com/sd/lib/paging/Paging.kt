@@ -1,5 +1,6 @@
 package com.sd.lib.paging
 
+import com.sd.lib.paging.FPaging.LoadScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,23 +25,14 @@ interface FPaging<T> {
 
   /**
    * 刷新数据，如果当前正在刷新或者加载更多，会先取消加载
-   * @param onLoad 加载回调，主线程触发
    */
-  suspend fun refresh(
-    onLoad: suspend LoadScope<T>.(page: Int) -> List<T>,
-  )
+  suspend fun refresh()
 
   /**
    * 加载更多数据，如果当前正在刷新或者加载更多，会抛出[CancellationException]取消本次调用，
    * 如果调用时数据为空，会转发到[refresh]
-   * @param onLoad 加载回调，主线程触发
    */
-  suspend fun append(
-    onLoad: suspend LoadScope<T>.(page: Int) -> List<T>,
-  )
-
-  /** 取消加载 */
-  suspend fun cancelLoad()
+  suspend fun append()
 
   interface LoadScope<T> {
     /** 当前状态 */
@@ -57,10 +49,12 @@ interface FPaging<T> {
 fun <T> FPaging(
   refreshPage: Int = 1,
   dataHandler: PagingDataHandler<T> = DefaultPagingDataHandler(),
+  onLoad: suspend LoadScope<T>.(page: Int) -> List<T>,
 ): FPaging<T> {
   return PagingImpl(
     refreshPage = refreshPage,
     dataHandler = dataHandler,
+    onLoad = onLoad,
   )
 }
 
@@ -69,7 +63,8 @@ fun <T> FPaging(
 private class PagingImpl<T>(
   refreshPage: Int,
   private val dataHandler: PagingDataHandler<T>,
-) : FPaging<T>, FPaging.LoadScope<T> {
+  private val onLoad: suspend LoadScope<T>.(page: Int) -> List<T>,
+) : FPaging<T>, LoadScope<T> {
 
   private val _mutator = MutatorMutex()
   private var _currentAppendPage = refreshPage
@@ -94,9 +89,7 @@ private class PagingImpl<T>(
   override val pagingState: PagingState<T>
     get() = state
 
-  override suspend fun refresh(
-    onLoad: suspend FPaging.LoadScope<T>.(page: Int) -> List<T>,
-  ) = withContext(Dispatchers.Main) {
+  override suspend fun refresh() = withContext(Dispatchers.Main) {
     _mutator.mutate {
       val loadPage = state.refreshPage
       val oldLoadState = state.refreshLoadState
@@ -120,14 +113,11 @@ private class PagingImpl<T>(
             _stateFlow.update { it.copy(refreshLoadState = LoadState.Error(error)) }
           }
         },
-        onLoad = onLoad,
       )
     }
   }
 
-  override suspend fun append(
-    onLoad: suspend FPaging.LoadScope<T>.(page: Int) -> List<T>,
-  ) = withContext(Dispatchers.Main) {
+  override suspend fun append() = withContext(Dispatchers.Main) {
     if (_mutator.isMutating) {
       // 如果正在加载中，抛出异常，取消当前协程
       throw CancellationException()
@@ -135,7 +125,7 @@ private class PagingImpl<T>(
 
     if (state.data.isEmpty()) {
       // 如果数据为空，触发刷新
-      refresh(onLoad)
+      refresh()
       return@withContext
     }
 
@@ -164,20 +154,14 @@ private class PagingImpl<T>(
             _stateFlow.update { it.copy(appendLoadState = LoadState.Error(error)) }
           }
         },
-        onLoad = onLoad,
       )
     }
-  }
-
-  override suspend fun cancelLoad() {
-    _mutator.cancelAndJoin()
   }
 
   private suspend fun load(
     page: Int,
     onSuccess: (pageData: List<T>, totalData: List<T>?) -> Unit,
     onFailure: (Throwable) -> Unit,
-    onLoad: suspend FPaging.LoadScope<T>.(page: Int) -> List<T>,
   ) {
     runCatching {
       val pageData = onLoad(page)
@@ -233,18 +217,6 @@ private class MutatorMutex {
     mutex.withLock {
       try {
         block()
-      } finally {
-        currentMutator.compareAndSet(mutator, null)
-      }
-    }
-  }
-
-  suspend fun cancelAndJoin() {
-    while (true) {
-      val mutator = currentMutator.get() ?: return
-      mutator.cancel()
-      try {
-        mutator.job.join()
       } finally {
         currentMutator.compareAndSet(mutator, null)
       }

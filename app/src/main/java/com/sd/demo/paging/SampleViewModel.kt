@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class SampleViewModel : ViewModel() {
-  private val _paging: FPaging<String> = FPaging()
 
   val stateFlow: StateFlow<PagingState<String>>
     get() = _paging.stateFlow
@@ -17,26 +16,24 @@ class SampleViewModel : ViewModel() {
   /** 刷新 */
   fun refresh() {
     viewModelScope.launch {
-      _paging.refresh { page ->
-        logMsg { "refresh $page" }
-        delay(1_000)
-        newList()
-      }
+      _paging.refresh()
     }
   }
 
   /** 加载更多 */
   fun append() {
     viewModelScope.launch {
-      _paging.append { page ->
-        logMsg { "append $page" }
-        delay(1_000)
-        when (page) {
-          3 -> loadOrThrow()
-          4 -> emptyList()
-          else -> newList()
-        }
-      }
+      _paging.append()
+    }
+  }
+
+  private val _paging: FPaging<String> = FPaging { page ->
+    logMsg { "loadData $page" }
+    delay(1_000)
+    when (page) {
+      3 -> loadOrThrow()
+      4 -> emptyList()
+      else -> newList()
     }
   }
 
