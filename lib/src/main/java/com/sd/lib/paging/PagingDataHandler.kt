@@ -19,7 +19,7 @@ abstract class PagingDataHandler<T> {
   abstract suspend fun handlePageData(page: Int, data: List<T>): List<T>?
 }
 
-class DefaultPagingDataHandler<T> : PagingDataHandler<T>() {
+internal class DefaultPagingDataHandler<T> : PagingDataHandler<T>() {
   private val _list = mutableListOf<T>()
 
   override suspend fun handlePageData(page: Int, data: List<T>): List<T> {
