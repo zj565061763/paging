@@ -20,8 +20,7 @@ class PagingAppendTest {
 
     // 1
     paging.append { page ->
-      assertEquals(refreshPage, page)
-      assertEquals(refreshPage, 1)
+      assertEquals(1, page)
       assertEquals(false, paging.state.isRefreshing)
       assertEquals(true, paging.state.isAppending)
       listOf(1, 2)
@@ -39,7 +38,7 @@ class PagingAppendTest {
 
     // 2
     paging.append { page ->
-      assertEquals(refreshPage + 1, page)
+      assertEquals(2, page)
       listOf(3, 4)
     }.also { result ->
       assertEquals(listOf(3, 4), result.getOrThrow())
@@ -55,7 +54,7 @@ class PagingAppendTest {
 
     // 3 空数据
     paging.append { page ->
-      assertEquals(refreshPage + 2, page)
+      assertEquals(3, page)
       emptyList()
     }.also { result ->
       assertEquals(emptyList<Int>(), result.getOrThrow())
@@ -71,8 +70,8 @@ class PagingAppendTest {
 
     // 4
     paging.append { page ->
-      // 由于上一次加载的是空数据，所以此次的page和上一次应该一样
-      assertEquals(refreshPage + 2, page)
+      // 由于上一次加载数据为空，所以本次page和上一次一样
+      assertEquals(3, page)
       emptyList()
     }.also { result ->
       assertEquals(emptyList<Int>(), result.getOrThrow())

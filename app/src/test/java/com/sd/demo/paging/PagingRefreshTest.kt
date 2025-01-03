@@ -18,8 +18,7 @@ class PagingRefreshTest {
     val paging = FPaging<Int>()
 
     paging.refresh { page ->
-      assertEquals(refreshPage, page)
-      assertEquals(refreshPage, 1)
+      assertEquals(1, page)
       assertEquals(true, paging.state.isRefreshing)
       assertEquals(false, paging.state.isAppending)
       listOf(1, 2)

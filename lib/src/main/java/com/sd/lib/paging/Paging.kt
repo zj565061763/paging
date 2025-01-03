@@ -43,10 +43,6 @@ interface FPaging<T> {
   interface LoadScope<T> {
     /** 当前状态 */
     val pagingState: PagingState<T>
-
-    /** 刷新数据的页码，例如数据源页码从1开始，那么[refreshPage]就为1 */
-    val refreshPage: Int
-      get() = pagingState.refreshPage
   }
 }
 
