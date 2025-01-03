@@ -54,19 +54,16 @@ interface FPaging<T> {
 }
 
 /**
- * [FPaging]
+ * 创建[FPaging]
  *
- * @param initial 初始值
- * @param refreshPage 刷新数据的页码，例如数据源页码从1开始，那么[refreshPage]就为1
- * @param dataHandler 处理每页的数据，并返回总的数据，返回null则总数据不变
+ * @param refreshPage 刷新数据的页码，如果数据源页码从1开始，那么[refreshPage]就传1
+ * @param dataHandler [PagingDataHandler]
  */
 fun <T> FPaging(
-  initial: List<T> = emptyList(),
   refreshPage: Int = 1,
   dataHandler: PagingDataHandler<T> = DefaultPagingDataHandler(),
 ): FPaging<T> {
   return PagingImpl(
-    initial = initial,
     refreshPage = refreshPage,
     dataHandler = dataHandler,
   )
@@ -75,7 +72,6 @@ fun <T> FPaging(
 //-------------------- impl --------------------
 
 private class PagingImpl<T>(
-  initial: List<T>,
   refreshPage: Int,
   private val dataHandler: PagingDataHandler<T>,
 ) : FPaging<T>, FPaging.LoadScope<T> {
@@ -85,7 +81,7 @@ private class PagingImpl<T>(
 
   private val _stateFlow = MutableStateFlow(
     PagingState(
-      data = initial,
+      data = emptyList<T>(),
       refreshPage = refreshPage,
     )
   )
@@ -107,11 +103,12 @@ private class PagingImpl<T>(
     notifyLoading: Boolean,
     onLoad: suspend FPaging.LoadScope<T>.(page: Int) -> List<T>,
   ): Result<List<T>> {
-    // 刷新之前，取消加载更多
-    cancelAppend()
     return load(
+      page = state.refreshPage,
       mutator = _refreshMutator,
       onStart = {
+        // 刷新之前，取消加载更多
+        cancelAppend()
         if (notifyLoading) {
           _stateFlow.update { it.copy(isRefreshing = true) }
         }
@@ -121,7 +118,6 @@ private class PagingImpl<T>(
           _stateFlow.update { it.copy(isRefreshing = false) }
         }
       },
-      getPage = { state.refreshPage },
       onLoad = onLoad,
     )
   }
@@ -130,10 +126,11 @@ private class PagingImpl<T>(
     notifyLoading: Boolean,
     onLoad: suspend FPaging.LoadScope<T>.(page: Int) -> List<T>,
   ): Result<List<T>> {
-    if (state.isRefreshing || state.isAppending) {
+    if (_refreshMutator.isMutating || _appendMutator.isMutating) {
       throw AppendCancellationException()
     }
     return load(
+      page = getAppendPage(),
       mutator = _appendMutator,
       onStart = {
         if (notifyLoading) {
@@ -145,24 +142,22 @@ private class PagingImpl<T>(
           _stateFlow.update { it.copy(isAppending = false) }
         }
       },
-      getPage = { getAppendPage() },
       onLoad = onLoad,
     )
   }
 
   private suspend fun load(
+    page: Int,
     mutator: MutatorMutex,
-    onStart: () -> Unit,
+    onStart: suspend () -> Unit,
     onFinish: () -> Unit,
-    getPage: () -> Int,
     onLoad: suspend FPaging.LoadScope<T>.(page: Int) -> List<T>,
   ): Result<List<T>> {
     return mutator.mutate {
-      val page = getPage()
       try {
-        onStart()
+        onStart().also { currentCoroutineContext().ensureActive() }
         onLoad(page)
-          .also { handleLoadData(page, it) }
+          .also { handlePageData(page, it) }
           .let { Result.success(it) }
       } catch (e: Throwable) {
         if (e is CancellationException) throw e
@@ -190,7 +185,7 @@ private class PagingImpl<T>(
     return if (state.loadSize!! <= 0) loadPage else loadPage + 1
   }
 
-  private suspend fun handleLoadData(page: Int, data: List<T>) {
+  private suspend fun handlePageData(page: Int, data: List<T>) {
     currentCoroutineContext().ensureActive()
     val totalData = dataHandler.handlePageData(page, data)
 

@@ -3,6 +3,9 @@ package com.sd.lib.paging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * 分页数据处理
+ */
 abstract class PagingDataHandler<T> {
   internal lateinit var getPagingState: () -> PagingState<T>
 

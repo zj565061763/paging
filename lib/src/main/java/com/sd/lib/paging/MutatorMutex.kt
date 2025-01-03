@@ -72,6 +72,9 @@ internal class MutatorMutex {
       }
     }
   }
+
+  val isMutating: Boolean
+    get() = mutex.isLocked
 }
 
 private class MutationInterruptedException : CancellationException("Mutation interrupted") {
