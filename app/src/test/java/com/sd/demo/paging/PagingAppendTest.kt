@@ -29,8 +29,8 @@ class PagingAppendTest {
       with(paging.state) {
         assertEquals(listOf(1, 2), data)
         assertEquals(true, result?.isSuccess)
-        assertEquals(refreshPage, successPage)
-        assertEquals(2, successPageSize)
+        assertEquals(refreshPage, successPage?.page)
+        assertEquals(2, successPage?.size)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }
@@ -45,8 +45,8 @@ class PagingAppendTest {
       with(paging.state) {
         assertEquals(listOf(1, 2, 3, 4), data)
         assertEquals(true, result?.isSuccess)
-        assertEquals(2, successPage)
-        assertEquals(2, successPageSize)
+        assertEquals(2, successPage?.page)
+        assertEquals(2, successPage?.size)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }
@@ -61,8 +61,8 @@ class PagingAppendTest {
       with(paging.state) {
         assertEquals(listOf(1, 2, 3, 4), data)
         assertEquals(true, result?.isSuccess)
-        assertEquals(3, successPage)
-        assertEquals(0, successPageSize)
+        assertEquals(3, successPage?.page)
+        assertEquals(0, successPage?.size)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }
@@ -78,8 +78,8 @@ class PagingAppendTest {
       with(paging.state) {
         assertEquals(listOf(1, 2, 3, 4), data)
         assertEquals(true, result?.isSuccess)
-        assertEquals(3, successPage)
-        assertEquals(0, successPageSize)
+        assertEquals(3, successPage?.page)
+        assertEquals(0, successPage?.size)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }
@@ -100,7 +100,6 @@ class PagingAppendTest {
       assertEquals(emptyList<Int>(), data)
       assertEquals("append failure", result!!.exceptionOrNull()!!.message)
       assertEquals(null, successPage)
-      assertEquals(null, successPageSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -123,7 +122,6 @@ class PagingAppendTest {
       assertEquals(emptyList<Int>(), data)
       assertEquals(null, result)
       assertEquals(null, successPage)
-      assertEquals(null, successPageSize)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -152,8 +150,8 @@ class PagingAppendTest {
     with(paging.state) {
       assertEquals(listOf(1, 2), data)
       assertEquals(true, result?.isSuccess)
-      assertEquals(refreshPage, successPage)
-      assertEquals(2, successPageSize)
+      assertEquals(refreshPage, successPage?.page)
+      assertEquals(2, successPage?.size)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -182,8 +180,8 @@ class PagingAppendTest {
     with(paging.state) {
       assertEquals(listOf(1, 2), data)
       assertEquals(true, result?.isSuccess)
-      assertEquals(refreshPage, successPage)
-      assertEquals(2, successPageSize)
+      assertEquals(refreshPage, successPage?.page)
+      assertEquals(2, successPage?.size)
       assertEquals(false, isRefreshing)
       assertEquals(false, isAppending)
     }
@@ -217,7 +215,6 @@ class PagingAppendTest {
         assertEquals(emptyList<Int>(), data)
         assertEquals(null, result)
         assertEquals(null, successPage)
-        assertEquals(null, successPageSize)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }
@@ -228,23 +225,22 @@ class PagingAppendTest {
         assertEquals(emptyList<Int>(), data)
         assertEquals(null, result)
         assertEquals(null, successPage)
-        assertEquals(null, successPageSize)
         assertEquals(false, isRefreshing)
         assertEquals(true, isAppending)
       }
       with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
         assertEquals(true, result?.isSuccess)
-        assertEquals(refreshPage, successPage)
-        assertEquals(2, successPageSize)
+        assertEquals(refreshPage, successPage?.page)
+        assertEquals(2, successPage?.size)
         assertEquals(false, isRefreshing)
         assertEquals(true, isAppending)
       }
       with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
         assertEquals(true, result?.isSuccess)
-        assertEquals(refreshPage, successPage)
-        assertEquals(2, successPageSize)
+        assertEquals(refreshPage, successPage?.page)
+        assertEquals(2, successPage?.size)
         assertEquals(false, isRefreshing)
         assertEquals(false, isAppending)
       }

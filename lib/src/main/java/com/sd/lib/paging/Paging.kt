@@ -139,8 +139,8 @@ private class PagingImpl<T>(
   private fun getAppendPage(): Int {
     with(state) {
       if (data.isEmpty()) return refreshPage
-      val loadPage = successPage ?: return refreshPage
-      return if (successPageSize!! <= 0) loadPage else loadPage + 1
+      val successPage = successPage ?: return refreshPage
+      return if (successPage.size > 0) successPage.page + 1 else successPage.page
     }
   }
 
@@ -177,8 +177,7 @@ private class PagingImpl<T>(
       state.copy(
         data = totalData ?: state.data,
         result = Result.success(Unit),
-        successPage = page,
-        successPageSize = data.size,
+        successPage = SuccessPage(page = page, size = data.size),
       )
     }
   }
