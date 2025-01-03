@@ -160,7 +160,12 @@ private class PagingImpl<T>(
         if (e is CancellationException) throw e
         Result.failure<List<T>>(e).also {
           currentCoroutineContext().ensureActive()
-          _stateFlow.update { it.copy(loadResult = Result.failure(e)) }
+          _stateFlow.update {
+            it.copy(
+              loadPage = page,
+              loadResult = Result.failure(e)
+            )
+          }
         }
       } finally {
         onFinish()
@@ -176,6 +181,7 @@ private class PagingImpl<T>(
     _stateFlow.update { state ->
       state.copy(
         data = totalData ?: state.data,
+        loadPage = page,
         loadResult = Result.success(Unit),
         successPage = SuccessPage(page = page, size = data.size),
       )
