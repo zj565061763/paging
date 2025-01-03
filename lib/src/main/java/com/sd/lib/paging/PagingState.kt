@@ -1,8 +1,8 @@
 package com.sd.lib.paging
 
 data class PagingState<T>(
-  /** 刷新数据的页码，例如数据源页码从1开始，那么[refreshPage]就为1 */
-  val refreshPage: Int = 1,
+  /** 刷新数据的页码，即数据源开始的页码 */
+  val refreshPage: Int,
 
   /** 总数据 */
   val data: List<T> = emptyList(),
