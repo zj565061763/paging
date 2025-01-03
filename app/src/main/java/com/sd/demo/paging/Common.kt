@@ -36,7 +36,7 @@ fun AppendItem(
     modifier = modifier.heightIn(100.dp),
     contentAlignment = Alignment.Center,
   ) {
-    when (val loadState = state.refreshLoadState) {
+    when (val loadState = state.appendLoadState) {
       is LoadState.Loading -> onLoading()
       is LoadState.NotLoading -> if (loadState.endOfPaginationReached) onNoMoreData()
       is LoadState.Error -> onFailure(loadState.error)

@@ -22,12 +22,3 @@ val PagingState<*>.showLoadEmpty: Boolean
 /** 是否显示加载数据失败 */
 val PagingState<*>.showLoadFailure: Boolean
   get() = data.isEmpty() && refreshLoadState is LoadState.Error
-
-/** 加载更多，是否显示没有数据了 */
-val PagingState<*>.showAppendNoMoreData: Boolean
-  get() = data.isNotEmpty()
-    && appendLoadState is LoadState.NotLoading && appendLoadState.endOfPaginationReached
-
-/** 加载更多，是否显示失败 */
-val PagingState<*>.showAppendFailure: Boolean
-  get() = data.isNotEmpty() && appendLoadState is LoadState.Error
