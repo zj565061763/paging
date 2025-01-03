@@ -83,7 +83,7 @@ private class PagingImpl<T>(
   )
 
   init {
-    dataHandler.getPagingState = { _stateFlow.value }
+    dataHandler.getPagingState = { state }
   }
 
   override val state: PagingState<T>
@@ -93,7 +93,7 @@ private class PagingImpl<T>(
     get() = _stateFlow.asStateFlow()
 
   override val pagingState: PagingState<T>
-    get() = _stateFlow.value
+    get() = state
 
   override suspend fun refresh(
     notifyLoading: Boolean,
