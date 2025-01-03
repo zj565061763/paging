@@ -5,7 +5,7 @@ import kotlinx.coroutines.withContext
 
 abstract class PagingDataHandler<Key : Any, Value : Any> {
   /**
-   * 处理第每页的数据，并返回总数据，如果返回null表示不处理，[handlePageData]总是串行，不会并发
+   * 处理第每页的数据，并返回总数据，如果返回null表示不处理，[handlePageData]不会并发
    */
   abstract suspend fun handlePageData(
     params: LoadParams<Key>,
