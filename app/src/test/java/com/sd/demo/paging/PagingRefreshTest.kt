@@ -42,8 +42,8 @@ class PagingRefreshTest {
 
     paging.refresh {
       error("refresh failure")
-    }.also { result ->
-      assertEquals("refresh failure", result.exceptionOrNull()!!.message)
+    }.also { refresh ->
+      assertEquals("refresh failure", refresh.exceptionOrNull()!!.message)
     }
 
     with(paging.state) {

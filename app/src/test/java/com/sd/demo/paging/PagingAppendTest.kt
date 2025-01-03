@@ -144,8 +144,8 @@ class PagingAppendTest {
       paging.append { listOf(3, 4) }
     } catch (e: CancellationException) {
       Result.failure(e)
-    }.also { result ->
-      assertEquals(true, result.exceptionOrNull()!! is CancellationException)
+    }.also { append ->
+      assertEquals(true, append.exceptionOrNull()!! is CancellationException)
     }
 
     loadJob.join()
@@ -174,8 +174,8 @@ class PagingAppendTest {
       paging.append { listOf(3, 4) }
     } catch (e: CancellationException) {
       Result.failure(e)
-    }.let { result ->
-      assertEquals(true, result.exceptionOrNull()!! is CancellationException)
+    }.also { append ->
+      assertEquals(true, append.exceptionOrNull()!! is CancellationException)
     }
 
     loadJob.join()
