@@ -140,6 +140,14 @@ private class PagingImpl<T>(
     _mutator.cancelAndJoin()
   }
 
+  private fun getAppendPage(): Int {
+    with(state) {
+      if (data.isEmpty()) return refreshPage
+      val loadPage = loadPage ?: return refreshPage
+      return if (loadSize!! <= 0) loadPage else loadPage + 1
+    }
+  }
+
   private suspend fun load(
     page: Int,
     onStart: suspend () -> Unit,
@@ -162,12 +170,6 @@ private class PagingImpl<T>(
         onFinish()
       }
     }
-  }
-
-  private fun getAppendPage(): Int {
-    if (state.data.isEmpty()) return state.refreshPage
-    val loadPage = state.loadPage ?: return state.refreshPage
-    return if (state.loadSize!! <= 0) loadPage else loadPage + 1
   }
 
   private suspend fun handlePageData(page: Int, data: List<T>) {
