@@ -20,7 +20,7 @@ abstract class PagingDataHandler<Key : Any, Value : Any> {
   }
 }
 
-private class DefaultPagingDataHandler<Key : Any, Value : Any> : PagingDataHandler<Key, Value>() {
+open class DefaultPagingDataHandler<Key : Any, Value : Any> : PagingDataHandler<Key, Value>() {
   private val _list = mutableListOf<Value>()
 
   override suspend fun handlePageData(
@@ -30,8 +30,20 @@ private class DefaultPagingDataHandler<Key : Any, Value : Any> : PagingDataHandl
     return withContext(Dispatchers.Default) {
       _list.apply {
         if (params is LoadParams.Refresh) clear()
-        addAll(result.data)
+        appendData(
+          params = params,
+          result = result,
+          source = this,
+        )
       }.toList()
     }
+  }
+
+  protected open fun appendData(
+    params: LoadParams<Key>,
+    result: LoadResult.Page<Key, Value>,
+    source: MutableList<Value>,
+  ) {
+    source.addAll(result.data)
   }
 }
