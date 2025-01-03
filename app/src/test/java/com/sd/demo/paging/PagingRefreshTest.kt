@@ -68,7 +68,7 @@ class PagingRefreshTest {
       }
     }.also { runCurrent() }
 
-    paging.cancelRefresh()
+    paging.cancelLoad()
 
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)

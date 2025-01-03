@@ -37,11 +37,8 @@ interface FPaging<T> {
     onLoad: suspend LoadScope<T>.(page: Int) -> List<T>,
   ): Result<List<T>>
 
-  /** 取消刷新 */
-  suspend fun cancelRefresh()
-
-  /** 取消加载更多 */
-  suspend fun cancelAppend()
+  /** 取消加载 */
+  suspend fun cancelLoad()
 
   interface LoadScope<T> {
     /** 当前状态 */
@@ -76,8 +73,7 @@ private class PagingImpl<T>(
   private val dataHandler: PagingDataHandler<T>,
 ) : FPaging<T>, FPaging.LoadScope<T> {
 
-  private val _refreshMutator = MutatorMutex()
-  private val _appendMutator = MutatorMutex()
+  private val _mutator = MutatorMutex()
 
   private val _stateFlow = MutableStateFlow(
     PagingState(
@@ -105,10 +101,7 @@ private class PagingImpl<T>(
   ): Result<List<T>> {
     return load(
       page = state.refreshPage,
-      mutator = _refreshMutator,
       onStart = {
-        // 刷新之前，取消加载更多
-        cancelAppend()
         if (notifyLoading) {
           _stateFlow.update { it.copy(isRefreshing = true) }
         }
@@ -126,12 +119,9 @@ private class PagingImpl<T>(
     notifyLoading: Boolean,
     onLoad: suspend FPaging.LoadScope<T>.(page: Int) -> List<T>,
   ): Result<List<T>> {
-    if (_refreshMutator.isMutating || _appendMutator.isMutating) {
-      throw AppendCancellationException()
-    }
+    if (_mutator.isMutating) throw AppendCancellationException()
     return load(
       page = getAppendPage(),
-      mutator = _appendMutator,
       onStart = {
         if (notifyLoading) {
           _stateFlow.update { it.copy(isAppending = true) }
@@ -146,14 +136,17 @@ private class PagingImpl<T>(
     )
   }
 
+  override suspend fun cancelLoad() {
+    _mutator.cancelAndJoin()
+  }
+
   private suspend fun load(
     page: Int,
-    mutator: MutatorMutex,
     onStart: suspend () -> Unit,
     onFinish: () -> Unit,
     onLoad: suspend FPaging.LoadScope<T>.(page: Int) -> List<T>,
   ): Result<List<T>> {
-    return mutator.mutate {
+    return _mutator.mutate {
       try {
         onStart().also { currentCoroutineContext().ensureActive() }
         onLoad(page)
@@ -169,14 +162,6 @@ private class PagingImpl<T>(
         onFinish()
       }
     }
-  }
-
-  override suspend fun cancelRefresh() {
-    _refreshMutator.cancelAndJoin()
-  }
-
-  override suspend fun cancelAppend() {
-    _appendMutator.cancelAndJoin()
   }
 
   private fun getAppendPage(): Int {

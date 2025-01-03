@@ -118,7 +118,7 @@ class PagingAppendTest {
       }
     }.also { runCurrent() }
 
-    paging.cancelAppend()
+    paging.cancelLoad()
 
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)
