@@ -23,7 +23,7 @@ interface FPaging<T> {
   val stateFlow: StateFlow<PagingState<T>>
 
   /**
-   * 刷新数据，如果当前正在刷新或者加载更多，会先取消正在进行的加载
+   * 刷新数据，如果当前正在刷新或者加载更多，会先取消加载
    * @param onLoad 加载回调，主线程触发
    */
   suspend fun refresh(
@@ -31,7 +31,7 @@ interface FPaging<T> {
   )
 
   /**
-   * 加载更多数据，如果当前正在刷新或者正在加载更多，会抛出[CancellationException]，取消本次调用，
+   * 加载更多数据，如果当前正在刷新或者加载更多，会抛出[CancellationException]取消本次调用，
    * 如果调用时数据为空，会转发到[refresh]
    * @param onLoad 加载回调，主线程触发
    */
