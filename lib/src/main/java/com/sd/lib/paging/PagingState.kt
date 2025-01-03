@@ -7,42 +7,27 @@ data class PagingState<T>(
   /** 总数据 */
   val data: List<T> = emptyList(),
 
-  /** 最后一次加载的页码 */
-  val loadPage: Int? = null,
-  /** 最后一次加载的结果 */
-  val loadResult: Result<Unit>? = null,
+  /** 刷新状态 */
+  val refreshLoadState: LoadState = LoadState.NotLoading.Incomplete,
 
-  /** 最后一次加载成功的页 */
-  val successPage: SuccessPage? = null,
-
-  /** 是否正在刷新 */
-  val isRefreshing: Boolean = false,
-
-  /** 是否正在加载更多 */
-  val isAppending: Boolean = false,
-)
-
-data class SuccessPage(
-  /** 页码 */
-  val page: Int,
-  /** 该页的数据个数 */
-  val size: Int,
+  /** 加载更多状态 */
+  val appendLoadState: LoadState = LoadState.NotLoading.Incomplete,
 )
 
 /** 是否显示加载数据为空 */
 val PagingState<*>.showLoadEmpty: Boolean
-  get() = data.isEmpty() && loadResult?.isSuccess == true
+  get() = data.isEmpty()
+    && refreshLoadState is LoadState.NotLoading && refreshLoadState.endOfPaginationReached
 
 /** 是否显示加载数据失败 */
 val PagingState<*>.showLoadFailure: Boolean
-  get() = data.isEmpty() && loadResult?.isFailure == true
+  get() = data.isEmpty() && refreshLoadState is LoadState.Error
 
-/** 是否显示加载更多没有数据了 */
+/** 加载更多，是否显示没有数据了 */
 val PagingState<*>.showAppendNoMoreData: Boolean
-  get() = data.isNotEmpty() && successPage?.size == 0
-
-/** 是否显示加载更多失败 */
-val PagingState<*>.showAppendFailure: Boolean
   get() = data.isNotEmpty()
-    && loadResult?.isFailure == true
-    && (successPage != null && successPage.page > refreshPage)
+    && appendLoadState is LoadState.NotLoading && appendLoadState.endOfPaginationReached
+
+/** 加载更多，是否显示失败 */
+val PagingState<*>.showAppendFailure: Boolean
+  get() = data.isNotEmpty() && appendLoadState is LoadState.Error

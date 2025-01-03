@@ -1,6 +1,7 @@
 package com.sd.demo.paging
 
 import com.sd.lib.paging.FPaging
+import com.sd.lib.paging.LoadState
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -11,10 +12,8 @@ class PagingCommonTest {
     with(paging.state) {
       assertEquals(1, refreshPage)
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
-      assertEquals(null, successPage)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      assertEquals(LoadState.NotLoading.Incomplete, refreshLoadState)
+      assertEquals(LoadState.NotLoading.Incomplete, appendLoadState)
     }
   }
 }

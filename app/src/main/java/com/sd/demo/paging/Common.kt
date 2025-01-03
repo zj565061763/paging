@@ -14,9 +14,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.sd.lib.paging.LoadState
 import com.sd.lib.paging.PagingState
-import com.sd.lib.paging.showAppendFailure
-import com.sd.lib.paging.showAppendNoMoreData
 import kotlinx.coroutines.CoroutineScope
 
 @Composable
@@ -37,10 +36,10 @@ fun AppendItem(
     modifier = modifier.heightIn(100.dp),
     contentAlignment = Alignment.Center,
   ) {
-    when {
-      state.isAppending -> onLoading()
-      state.showAppendNoMoreData -> onNoMoreData()
-      state.showAppendFailure -> state.loadResult?.onFailure { onFailure(it) }
+    when (val loadState = state.refreshLoadState) {
+      is LoadState.Loading -> onLoading()
+      is LoadState.NotLoading -> if (loadState.endOfPaginationReached) onNoMoreData()
+      is LoadState.Error -> onFailure(loadState.error)
     }
   }
 }

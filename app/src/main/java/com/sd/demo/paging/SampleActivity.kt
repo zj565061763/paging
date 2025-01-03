@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sd.demo.paging.theme.AppTheme
+import com.sd.lib.paging.LoadState
 
 class SampleActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +43,7 @@ private fun Content(
 
   PullToRefreshBox(
     modifier = modifier.fillMaxSize(),
-    isRefreshing = pagingState.isRefreshing,
+    isRefreshing = pagingState.refreshLoadState is LoadState.Loading,
     onRefresh = { vm.refresh() },
   ) {
     LazyColumn(

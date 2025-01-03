@@ -13,8 +13,8 @@ abstract class PagingDataHandler<T> {
     get() = getPagingState()
 
   /**
-   * 处理第[page]页数据[data]并返回总数据，如果返回null则总数据不变。
-   * 此方法总是串行，不会并发。
+   * 处理第[page]页数据[data]并返回总数据，返回null表示不处理，
+   * [handlePageData]总是串行，不会并发。
    */
   abstract suspend fun handlePageData(page: Int, data: List<T>): List<T>?
 }

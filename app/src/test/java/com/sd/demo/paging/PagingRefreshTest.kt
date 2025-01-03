@@ -2,37 +2,33 @@ package com.sd.demo.paging
 
 import app.cash.turbine.test
 import com.sd.lib.paging.FPaging
+import com.sd.lib.paging.LoadState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class PagingRefreshTest {
+  @get:Rule
+  val mainDispatcherRule = MainDispatcherRule()
+
   @Test
   fun `test refresh success`() = runTest {
     val paging = FPaging<Int>()
 
     paging.refresh { page ->
       assertEquals(1, page)
-      assertEquals(true, paging.state.isRefreshing)
-      assertEquals(false, paging.state.isAppending)
       listOf(1, 2)
-    }.also { refresh ->
-      assertEquals(listOf(1, 2), refresh.getOrThrow())
     }
 
     with(paging.state) {
       assertEquals(listOf(1, 2), data)
-      assertEquals(true, loadResult?.isSuccess)
-      assertEquals(refreshPage, successPage?.page)
-      assertEquals(2, successPage?.size)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      assertEquals(LoadState.NotLoading.Complete, refreshLoadState)
     }
   }
 
@@ -42,16 +38,12 @@ class PagingRefreshTest {
 
     paging.refresh {
       error("refresh failure")
-    }.also { refresh ->
-      assertEquals("refresh failure", refresh.exceptionOrNull()!!.message)
     }
 
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)
-      assertEquals("refresh failure", loadResult!!.exceptionOrNull()!!.message)
-      assertEquals(null, successPage)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      val loadState = refreshLoadState as LoadState.Error
+      assertEquals("refresh failure", loadState.error.message)
     }
   }
 
@@ -70,10 +62,7 @@ class PagingRefreshTest {
 
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
-      assertEquals(null, successPage)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      assertEquals(LoadState.NotLoading.Incomplete, refreshLoadState)
     }
   }
 
@@ -92,11 +81,7 @@ class PagingRefreshTest {
 
     with(paging.state) {
       assertEquals(listOf(3, 4), data)
-      assertEquals(true, loadResult?.isSuccess)
-      assertEquals(refreshPage, successPage?.page)
-      assertEquals(2, successPage?.size)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      assertEquals(LoadState.NotLoading.Complete, refreshLoadState)
     }
   }
 
@@ -115,31 +100,8 @@ class PagingRefreshTest {
 
     with(paging.state) {
       assertEquals(listOf(3, 4), data)
-      assertEquals(true, loadResult?.isSuccess)
-      assertEquals(refreshPage, successPage?.page)
-      assertEquals(2, successPage?.size)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      assertEquals(LoadState.NotLoading.Complete, refreshLoadState)
     }
-  }
-
-  @Test
-  fun `test refresh notify loading`() = runTest {
-    val paging = FPaging<Int>()
-    assertEquals(false, paging.state.isRefreshing)
-
-    launch {
-      paging.refresh(notifyLoading = false) {
-        delay(5_000)
-        listOf(1, 2)
-      }
-    }
-
-    runCurrent()
-    assertEquals(false, paging.state.isRefreshing)
-
-    advanceUntilIdle()
-    assertEquals(false, paging.state.isRefreshing)
   }
 
   @Test
@@ -149,36 +111,18 @@ class PagingRefreshTest {
     paging.stateFlow.test {
       with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, loadResult)
-        assertEquals(null, successPage)
-        assertEquals(false, isRefreshing)
-        assertEquals(false, isAppending)
+        assertEquals(LoadState.NotLoading.Incomplete, refreshLoadState)
       }
 
       paging.refresh { listOf(3, 4) }
 
       with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, loadResult)
-        assertEquals(null, successPage)
-        assertEquals(true, isRefreshing)
-        assertEquals(false, isAppending)
+        assertEquals(LoadState.Loading, refreshLoadState)
       }
       with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
-        assertEquals(true, loadResult?.isSuccess)
-        assertEquals(refreshPage, successPage?.page)
-        assertEquals(2, successPage?.size)
-        assertEquals(true, isRefreshing)
-        assertEquals(false, isAppending)
-      }
-      with(awaitItem()) {
-        assertEquals(listOf(3, 4), data)
-        assertEquals(true, loadResult?.isSuccess)
-        assertEquals(refreshPage, successPage?.page)
-        assertEquals(2, successPage?.size)
-        assertEquals(false, isRefreshing)
-        assertEquals(false, isAppending)
+        assertEquals(LoadState.NotLoading.Complete, refreshLoadState)
       }
     }
   }

@@ -2,18 +2,22 @@ package com.sd.demo.paging
 
 import app.cash.turbine.test
 import com.sd.lib.paging.FPaging
+import com.sd.lib.paging.LoadState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class PagingAppendTest {
+  @get:Rule
+  val mainDispatcherRule = MainDispatcherRule()
+
   @Test
   fun `test append success`() = runTest {
     val paging = FPaging<Int>()
@@ -21,18 +25,11 @@ class PagingAppendTest {
     // 1
     paging.append { page ->
       assertEquals(1, page)
-      assertEquals(false, paging.state.isRefreshing)
-      assertEquals(true, paging.state.isAppending)
       listOf(1, 2)
-    }.also { append ->
-      assertEquals(listOf(1, 2), append.getOrThrow())
+    }.also {
       with(paging.state) {
         assertEquals(listOf(1, 2), data)
-        assertEquals(true, loadResult?.isSuccess)
-        assertEquals(refreshPage, successPage?.page)
-        assertEquals(2, successPage?.size)
-        assertEquals(false, isRefreshing)
-        assertEquals(false, isAppending)
+        assertEquals(LoadState.NotLoading.Incomplete, appendLoadState)
       }
     }
 
@@ -40,15 +37,10 @@ class PagingAppendTest {
     paging.append { page ->
       assertEquals(2, page)
       listOf(3, 4)
-    }.also { append ->
-      assertEquals(listOf(3, 4), append.getOrThrow())
+    }.also {
       with(paging.state) {
         assertEquals(listOf(1, 2, 3, 4), data)
-        assertEquals(true, loadResult?.isSuccess)
-        assertEquals(2, successPage?.page)
-        assertEquals(2, successPage?.size)
-        assertEquals(false, isRefreshing)
-        assertEquals(false, isAppending)
+        assertEquals(LoadState.NotLoading.Incomplete, appendLoadState)
       }
     }
 
@@ -56,15 +48,10 @@ class PagingAppendTest {
     paging.append { page ->
       assertEquals(3, page)
       emptyList()
-    }.also { append ->
-      assertEquals(emptyList<Int>(), append.getOrThrow())
+    }.also {
       with(paging.state) {
         assertEquals(listOf(1, 2, 3, 4), data)
-        assertEquals(true, loadResult?.isSuccess)
-        assertEquals(3, successPage?.page)
-        assertEquals(0, successPage?.size)
-        assertEquals(false, isRefreshing)
-        assertEquals(false, isAppending)
+        assertEquals(LoadState.NotLoading.Complete, appendLoadState)
       }
     }
 
@@ -73,15 +60,10 @@ class PagingAppendTest {
       // 由于上一次加载数据为空，所以本次page和上一次一样
       assertEquals(3, page)
       emptyList()
-    }.also { append ->
-      assertEquals(emptyList<Int>(), append.getOrThrow())
+    }.also {
       with(paging.state) {
         assertEquals(listOf(1, 2, 3, 4), data)
-        assertEquals(true, loadResult?.isSuccess)
-        assertEquals(3, successPage?.page)
-        assertEquals(0, successPage?.size)
-        assertEquals(false, isRefreshing)
-        assertEquals(false, isAppending)
+        assertEquals(LoadState.NotLoading.Complete, appendLoadState)
       }
     }
   }
@@ -92,16 +74,12 @@ class PagingAppendTest {
 
     paging.append {
       error("append failure")
-    }.also { append ->
-      assertEquals("append failure", append.exceptionOrNull()!!.message)
     }
 
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)
-      assertEquals("append failure", loadResult!!.exceptionOrNull()!!.message)
-      assertEquals(null, successPage)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      val loadState = appendLoadState as LoadState.Error
+      assertEquals("append failure", loadState.error.message)
     }
   }
 
@@ -120,10 +98,7 @@ class PagingAppendTest {
 
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)
-      assertEquals(null, loadResult)
-      assertEquals(null, successPage)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      assertEquals(LoadState.NotLoading.Incomplete, appendLoadState)
     }
   }
 
@@ -138,22 +113,16 @@ class PagingAppendTest {
       }
     }.also { runCurrent() }
 
-    try {
+    runCatching {
       paging.append { listOf(3, 4) }
-    } catch (e: CancellationException) {
-      Result.failure(e)
-    }.also { append ->
-      assertEquals(true, append.exceptionOrNull()!! is CancellationException)
+    }.also { result ->
+      assertEquals(true, result.exceptionOrNull()!! is CancellationException)
     }
 
     loadJob.join()
     with(paging.state) {
       assertEquals(listOf(1, 2), data)
-      assertEquals(true, loadResult?.isSuccess)
-      assertEquals(refreshPage, successPage?.page)
-      assertEquals(2, successPage?.size)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      assertEquals(LoadState.NotLoading.Complete, appendLoadState)
     }
   }
 
@@ -168,42 +137,17 @@ class PagingAppendTest {
       }
     }.also { runCurrent() }
 
-    try {
+    runCatching {
       paging.append { listOf(3, 4) }
-    } catch (e: CancellationException) {
-      Result.failure(e)
-    }.also { append ->
-      assertEquals(true, append.exceptionOrNull()!! is CancellationException)
+    }.also { result ->
+      assertEquals(true, result.exceptionOrNull()!! is CancellationException)
     }
 
     loadJob.join()
     with(paging.state) {
       assertEquals(listOf(1, 2), data)
-      assertEquals(true, loadResult?.isSuccess)
-      assertEquals(refreshPage, successPage?.page)
-      assertEquals(2, successPage?.size)
-      assertEquals(false, isRefreshing)
-      assertEquals(false, isAppending)
+      assertEquals(LoadState.NotLoading.Complete, refreshLoadState)
     }
-  }
-
-  @Test
-  fun `test append notify loading`() = runTest {
-    val paging = FPaging<Int>()
-    assertEquals(false, paging.state.isAppending)
-
-    launch {
-      paging.append(notifyLoading = false) {
-        delay(5_000)
-        listOf(1, 2)
-      }
-    }
-
-    runCurrent()
-    assertEquals(false, paging.state.isAppending)
-
-    advanceUntilIdle()
-    assertEquals(false, paging.state.isAppending)
   }
 
   @Test
@@ -213,36 +157,18 @@ class PagingAppendTest {
     paging.stateFlow.test {
       with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, loadResult)
-        assertEquals(null, successPage)
-        assertEquals(false, isRefreshing)
-        assertEquals(false, isAppending)
+        assertEquals(LoadState.NotLoading.Incomplete, refreshLoadState)
       }
 
       paging.append { listOf(3, 4) }
 
       with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
-        assertEquals(null, loadResult)
-        assertEquals(null, successPage)
-        assertEquals(false, isRefreshing)
-        assertEquals(true, isAppending)
+        assertEquals(LoadState.Loading, refreshLoadState)
       }
       with(awaitItem()) {
         assertEquals(listOf(3, 4), data)
-        assertEquals(true, loadResult?.isSuccess)
-        assertEquals(refreshPage, successPage?.page)
-        assertEquals(2, successPage?.size)
-        assertEquals(false, isRefreshing)
-        assertEquals(true, isAppending)
-      }
-      with(awaitItem()) {
-        assertEquals(listOf(3, 4), data)
-        assertEquals(true, loadResult?.isSuccess)
-        assertEquals(refreshPage, successPage?.page)
-        assertEquals(2, successPage?.size)
-        assertEquals(false, isRefreshing)
-        assertEquals(false, isAppending)
+        assertEquals(LoadState.NotLoading.Complete, refreshLoadState)
       }
     }
   }
