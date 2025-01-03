@@ -1,6 +1,5 @@
 package com.sd.lib.paging
 
-import com.sd.lib.paging.FPaging.LoadScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,91 +32,77 @@ interface FPaging<T> {
    * 如果调用时数据为空，会转发到[refresh]
    */
   suspend fun append()
-
-  interface LoadScope<T> {
-    /** 当前状态 */
-    val pagingState: PagingState<T>
-  }
 }
 
 /**
  * 创建[FPaging]
  *
- * @param refreshPage 刷新数据的页码，如果数据源页码从1开始，那么[refreshPage]就传1
+ * @param refreshKey 刷新数据的页码
  * @param dataHandler [PagingDataHandler]
  */
-fun <T> FPaging(
-  refreshPage: Int = 1,
-  dataHandler: PagingDataHandler<T> = DefaultPagingDataHandler(),
-  onLoad: suspend LoadScope<T>.(page: Int) -> List<T>,
-): FPaging<T> {
+fun <Key : Any, Value : Any> FPaging(
+  refreshKey: Key,
+  dataHandler: PagingDataHandler<Key, Value> = PagingDataHandler.default(),
+  pagingSource: PagingSource<Key, Value>,
+): FPaging<Value> {
   return PagingImpl(
-    refreshPage = refreshPage,
+    refreshKey = refreshKey,
     dataHandler = dataHandler,
-    onLoad = onLoad,
+    pagingSource = pagingSource,
   )
 }
 
 //-------------------- impl --------------------
 
-private class PagingImpl<T>(
-  refreshPage: Int,
-  private val dataHandler: PagingDataHandler<T>,
-  private val onLoad: suspend LoadScope<T>.(page: Int) -> List<T>,
-) : FPaging<T>, LoadScope<T> {
+private class PagingImpl<Key : Any, Value : Any>(
+  private val refreshKey: Key,
+  private val dataHandler: PagingDataHandler<Key, Value>,
+  private val pagingSource: PagingSource<Key, Value>,
+) : FPaging<Value> {
 
   private val _mutator = MutatorMutex()
-  private var _currentAppendPage = refreshPage
+  private val _stateFlow = MutableStateFlow(PagingState<Value>())
 
-  private val _stateFlow = MutableStateFlow(
-    PagingState(
-      data = emptyList<T>(),
-      refreshPage = refreshPage,
-    )
-  )
+  private var _nextKey: Key? = null
 
-  init {
-    dataHandler.getPagingState = { state }
-  }
-
-  override val state: PagingState<T>
+  override val state: PagingState<Value>
     get() = _stateFlow.value
 
-  override val stateFlow: StateFlow<PagingState<T>>
+  override val stateFlow: StateFlow<PagingState<Value>>
     get() = _stateFlow.asStateFlow()
 
-  override val pagingState: PagingState<T>
-    get() = state
-
-  override suspend fun refresh() = withContext(Dispatchers.Main) {
+  override suspend fun refresh(): Unit = withContext(Dispatchers.Main) {
     _mutator.mutate {
-      val loadPage = state.refreshPage
       val oldLoadState = state.refreshLoadState
       _stateFlow.update { it.copy(refreshLoadState = LoadState.Loading) }
-      load(
-        page = loadPage,
-        onSuccess = { _, totalData ->
-          _currentAppendPage = loadPage
-          _stateFlow.update {
-            it.copy(
-              data = totalData ?: it.data,
-              refreshLoadState = LoadState.NotLoading.Complete,
-            )
+      loadData(LoadParams.Refresh(refreshKey))
+        .onSuccess { data ->
+          val (loadResult, totalData) = data
+          when (loadResult) {
+            is LoadResult.None -> check(totalData == null)
+            is LoadResult.Page -> {
+              _nextKey = loadResult.nextKey
+              _stateFlow.update {
+                it.copy(
+                  data = totalData ?: it.data,
+                  refreshLoadState = LoadState.NotLoading.Complete,
+                )
+              }
+            }
           }
-        },
-        onFailure = { error ->
+        }
+        .onFailure { error ->
           if (error is CancellationException) {
             _stateFlow.update { it.copy(refreshLoadState = oldLoadState) }
             throw error
           } else {
             _stateFlow.update { it.copy(refreshLoadState = LoadState.Error(error)) }
           }
-        },
-      )
+        }
     }
   }
 
-  override suspend fun append() = withContext(Dispatchers.Main) {
+  override suspend fun append(): Unit = withContext(Dispatchers.Main) {
     if (_mutator.isMutating) {
       // 如果正在加载中，抛出异常，取消当前协程
       throw CancellationException()
@@ -129,54 +114,62 @@ private class PagingImpl<T>(
       return@withContext
     }
 
+    val appendKey = _nextKey ?: return@withContext
+
     _mutator.mutate {
-      val loadPage = _currentAppendPage + 1
       val oldLoadState = state.appendLoadState
       _stateFlow.update { it.copy(appendLoadState = LoadState.Loading) }
-      load(
-        page = loadPage,
-        onSuccess = { pageData, totalData ->
-          if (pageData.isNotEmpty()) {
-            _currentAppendPage = loadPage
+      loadData(LoadParams.Append(appendKey))
+        .onSuccess { data ->
+          val (loadResult, totalData) = data
+          when (loadResult) {
+            is LoadResult.None -> check(totalData == null)
+            is LoadResult.Page -> {
+              loadResult.nextKey?.also { _nextKey = it }
+              _stateFlow.update {
+                it.copy(
+                  data = totalData ?: it.data,
+                  appendLoadState = if (loadResult.nextKey == null) LoadState.NotLoading.Complete else LoadState.NotLoading.Incomplete,
+                )
+              }
+            }
           }
-          _stateFlow.update {
-            it.copy(
-              data = totalData ?: it.data,
-              appendLoadState = if (pageData.isEmpty()) LoadState.NotLoading.Complete else LoadState.NotLoading.Incomplete,
-            )
-          }
-        },
-        onFailure = { error ->
+        }
+        .onFailure { error ->
           if (error is CancellationException) {
             _stateFlow.update { it.copy(appendLoadState = oldLoadState) }
             throw error
           } else {
             _stateFlow.update { it.copy(appendLoadState = LoadState.Error(error)) }
           }
-        },
-      )
+        }
     }
   }
 
-  private suspend fun load(
-    page: Int,
-    onSuccess: (pageData: List<T>, totalData: List<T>?) -> Unit,
-    onFailure: (Throwable) -> Unit,
-  ) {
-    runCatching {
-      val pageData = onLoad(page)
-      val totalData = handlePageData(page, pageData)
-      pageData to totalData
-    }.onSuccess {
-      onSuccess(it.first, it.second)
-    }.onFailure {
-      onFailure(it)
+  /** 加载数据 */
+  private suspend fun loadData(loadParams: LoadParams<Key>): Result<Pair<LoadResult<Key, Value>, List<Value>?>> {
+    return runCatching {
+      val loadResult = pagingSource.load(loadParams)
+      val totalData = handleResult(loadParams, loadResult)
+      loadResult to totalData
     }
   }
 
-  private suspend fun handlePageData(page: Int, data: List<T>): List<T>? {
-    currentCoroutineContext().ensureActive()
-    return dataHandler.handlePageData(page, data).also {
+  /** 处理加载结果，并返回总数据 */
+  private suspend fun handleResult(
+    loadParams: LoadParams<Key>,
+    loadResult: LoadResult<Key, Value>,
+  ): List<Value>? {
+    return when (loadResult) {
+      is LoadResult.None -> null
+      is LoadResult.Page -> {
+        currentCoroutineContext().ensureActive()
+        dataHandler.handlePageData(
+          params = loadParams,
+          result = loadResult,
+        )
+      }
+    }.also {
       currentCoroutineContext().ensureActive()
     }
   }

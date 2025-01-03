@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicInteger
 
 @ExperimentalCoroutinesApi
 class PagingRefreshTest {
@@ -19,12 +20,11 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh success`() = runTest {
-    val paging = FPaging<Int>()
-
-    paging.refresh { page ->
-      assertEquals(1, page)
+    val paging = FPaging {
       listOf(1, 2)
     }
+
+    paging.refresh()
 
     with(paging.state) {
       assertEquals(listOf(1, 2), data)
@@ -34,11 +34,11 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh failure`() = runTest {
-    val paging = FPaging<Int>()
-
-    paging.refresh {
+    val paging = FPaging<Int> {
       error("refresh failure")
     }
+
+    paging.refresh()
 
     with(paging.state) {
       assertEquals(emptyList<Int>(), data)
@@ -48,36 +48,25 @@ class PagingRefreshTest {
   }
 
   @Test
-  fun `test refresh cancel`() = runTest {
-    val paging = FPaging<Int>()
-
-    launch {
-      paging.refresh {
-        delay(5_000)
-        listOf(1, 2)
-      }
-    }.also { runCurrent() }
-
-    paging.cancelLoad()
-
-    with(paging.state) {
-      assertEquals(emptyList<Int>(), data)
-      assertEquals(LoadState.NotLoading.Incomplete, refreshLoadState)
-    }
-  }
-
-  @Test
   fun `test refresh when refreshing`() = runTest {
-    val paging = FPaging<Int>()
+    val counter = AtomicInteger()
+    val paging = FPaging {
+      when (counter.incrementAndGet()) {
+        1 -> {
+          delay(5_000)
+          listOf(1, 2)
+        }
+        else -> {
+          listOf(3, 4)
+        }
+      }
+    }
 
     launch {
-      paging.refresh {
-        delay(5_000)
-        listOf(1, 2)
-      }
+      paging.refresh()
     }.also { runCurrent() }
 
-    paging.refresh { listOf(3, 4) }
+    paging.refresh()
 
     with(paging.state) {
       assertEquals(listOf(3, 4), data)
@@ -87,16 +76,24 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh when appending`() = runTest {
-    val paging = FPaging<Int>()
+    val counter = AtomicInteger()
+    val paging = FPaging {
+      when (counter.incrementAndGet()) {
+        1 -> {
+          delay(5_000)
+          listOf(1, 2)
+        }
+        else -> {
+          listOf(3, 4)
+        }
+      }
+    }
 
     launch {
-      paging.append {
-        delay(5_000)
-        listOf(1, 2)
-      }
+      paging.append()
     }.also { runCurrent() }
 
-    paging.refresh { listOf(3, 4) }
+    paging.refresh()
 
     with(paging.state) {
       assertEquals(listOf(3, 4), data)
@@ -106,7 +103,9 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh flow`() = runTest {
-    val paging = FPaging<Int>()
+    val paging = FPaging {
+      listOf(1, 2)
+    }
 
     paging.stateFlow.test {
       with(awaitItem()) {
@@ -114,14 +113,14 @@ class PagingRefreshTest {
         assertEquals(LoadState.NotLoading.Incomplete, refreshLoadState)
       }
 
-      paging.refresh { listOf(3, 4) }
+      paging.refresh()
 
       with(awaitItem()) {
         assertEquals(emptyList<Int>(), data)
         assertEquals(LoadState.Loading, refreshLoadState)
       }
       with(awaitItem()) {
-        assertEquals(listOf(3, 4), data)
+        assertEquals(listOf(1, 2), data)
         assertEquals(LoadState.NotLoading.Complete, refreshLoadState)
       }
     }
