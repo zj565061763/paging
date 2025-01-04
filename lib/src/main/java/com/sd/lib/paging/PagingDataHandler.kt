@@ -39,7 +39,7 @@ open class DefaultPagingDataHandler<Key : Any, Value : Any> : PagingDataHandler<
     }
   }
 
-  protected open fun appendData(
+  protected open suspend fun appendData(
     params: LoadParams<Key>,
     result: LoadResult.Page<Key, Value>,
     source: MutableList<Value>,
