@@ -1,0 +1,53 @@
+package com.sd.lib.paging.compose
+
+import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.runtime.Composable
+
+fun LazyListScope.pagingItemAppend(
+  paging: PagingPresenter<*>,
+  key: Any? = "paging append ui state",
+  contentType: Any? = "paging append ui state",
+  content: @Composable LazyItemScope.() -> Unit = { paging.UiAppend() },
+) {
+  if (paging.isEmpty) return
+  item(
+    key = key,
+    contentType = contentType,
+    content = content,
+  )
+}
+
+fun <T : Any> LazyListScope.pagingItems(
+  paging: PagingPresenter<T>,
+  key: ((item: T) -> Any)? = null,
+  contentType: (item: T) -> Any? = { null },
+  itemContent: @Composable LazyItemScope.(item: T) -> Unit,
+) {
+  items(
+    items = paging.items,
+    key = key,
+    contentType = contentType,
+  ) { item ->
+    itemContent(item)
+    AppendIfLastItem(paging, item)
+  }
+}
+
+fun <T : Any> LazyListScope.pagingItemsIndexed(
+  paging: PagingPresenter<T>,
+  key: ((index: Int, item: T) -> Any)? = null,
+  contentType: (index: Int, item: T) -> Any? = { _, _ -> null },
+  itemContent: @Composable LazyItemScope.(index: Int, item: T) -> Unit,
+) {
+  itemsIndexed(
+    items = paging.items,
+    key = key,
+    contentType = contentType,
+  ) { index, item ->
+    itemContent(index, item)
+    AppendIfLastItem(paging, item)
+  }
+}
