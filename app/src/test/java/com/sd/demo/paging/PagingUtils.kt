@@ -48,9 +48,7 @@ private class TestErrorPagingSource(
 ) : KeyIntPagingSource<String>() {
   override suspend fun loadImpl(params: LoadParams<Int>): List<String> {
     delay(5_000)
-    if (params.key == errorPage) {
-      error("error")
-    }
+    if (params.key == errorPage) error("error")
     return listOf(params.key.toString())
   }
 }
