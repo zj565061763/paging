@@ -107,11 +107,9 @@ private class PagingImpl<Key : Any, Value : Any>(
   override suspend fun append(): Unit = withContext(Dispatchers.Main) {
     if (isInModifyBlock()) error("Can not call append in the modify block.")
 
-    with(state) {
-      if (refreshLoadState is LoadState.Loading || appendLoadState is LoadState.Loading) {
-        // 如果正在加载，抛出异常，取消当前协程
-        throw CancellationException()
-      }
+    if (_mutator.isMutating) {
+      // 如果正在加载，抛出异常，取消当前协程
+      throw CancellationException()
     }
 
     if (state.items.isEmpty()) {
@@ -191,6 +189,9 @@ private class PagingImpl<Key : Any, Value : Any>(
 private class Mutator {
   private val _mutex = Mutex()
   private var _job: Job? = null
+
+  val isMutating: Boolean
+    get() = _job?.isActive == true
 
   suspend fun <R> mutate(block: suspend () -> R): R = coroutineScope {
     _job?.cancel()
