@@ -44,7 +44,7 @@ fun PagingPresenter<*>.UiAppend(
 }
 
 @Composable
-inline fun PagingPresenter<*>.UiAppendSlot(
+fun PagingPresenter<*>.UiAppendSlot(
   /** 加载中 */
   stateLoading: @Composable () -> Unit = {},
   /** 加载错误 */
@@ -68,7 +68,7 @@ private fun StateLoading(
   CircularProgressIndicator(
     modifier = modifier.size(24.dp),
     strokeWidth = 2.dp,
-    color = MaterialTheme.colorScheme.onSurface
+    color = MaterialTheme.colorScheme.onSurface,
   )
 }
 
