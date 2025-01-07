@@ -71,8 +71,6 @@ private class PagingImpl<Key : Any, Value : Any>(
   private val _mutator = Mutator()
   private val _stateFlow = MutableStateFlow(PagingState<Value>())
 
-  private var _isInRefresh = false
-  private var _isInAppend = false
   private var _nextKey: Key? = null
 
   override val state: PagingState<Value> get() = _stateFlow.value
@@ -80,43 +78,40 @@ private class PagingImpl<Key : Any, Value : Any>(
 
   override suspend fun refresh(): Unit = withContext(Dispatchers.Main) {
     if (isInModifyBlock()) error("Can not call refresh in the modify block.")
-    try {
-      _isInRefresh = true
-      _mutator.mutate {
-        val oldLoadState = state.refreshLoadState.also { check(it !is LoadState.Loading) }
-        _stateFlow.update { it.copy(refreshLoadState = LoadState.Loading) }
-        loadAndHandle(LoadParams.Refresh(refreshKey))
-          .onSuccess { data ->
-            val (loadResult, items) = data
-            _nextKey = loadResult.nextKey
-            _stateFlow.update {
-              it.copy(
-                items = items,
-                refreshLoadState = LoadState.NotLoading.Complete,
-                appendLoadState = if (loadResult.nextKey == null) LoadState.NotLoading.Complete else LoadState.NotLoading.Incomplete,
-              )
-            }
+    _mutator.mutate {
+      val oldLoadState = state.refreshLoadState.also { check(it !is LoadState.Loading) }
+      _stateFlow.update { it.copy(refreshLoadState = LoadState.Loading) }
+      loadAndHandle(LoadParams.Refresh(refreshKey))
+        .onSuccess { data ->
+          val (loadResult, items) = data
+          _nextKey = loadResult.nextKey
+          _stateFlow.update {
+            it.copy(
+              items = items,
+              refreshLoadState = LoadState.NotLoading.Complete,
+              appendLoadState = if (loadResult.nextKey == null) LoadState.NotLoading.Complete else LoadState.NotLoading.Incomplete,
+            )
           }
-          .onFailure { error ->
-            if (error is CancellationException) {
-              _stateFlow.update { it.copy(refreshLoadState = oldLoadState) }
-              throw error
-            } else {
-              _stateFlow.update { it.copy(refreshLoadState = LoadState.Error(error)) }
-            }
+        }
+        .onFailure { error ->
+          if (error is CancellationException) {
+            _stateFlow.update { it.copy(refreshLoadState = oldLoadState) }
+            throw error
+          } else {
+            _stateFlow.update { it.copy(refreshLoadState = LoadState.Error(error)) }
           }
-      }
-    } finally {
-      _isInRefresh = false
+        }
     }
   }
 
   override suspend fun append(): Unit = withContext(Dispatchers.Main) {
     if (isInModifyBlock()) error("Can not call append in the modify block.")
 
-    if (_isInRefresh || _isInAppend) {
-      // 如果正在加载，抛出异常，取消当前协程
-      throw CancellationException()
+    with(state) {
+      if (refreshLoadState is LoadState.Loading || appendLoadState is LoadState.Loading) {
+        // 如果正在加载，抛出异常，取消当前协程
+        throw CancellationException()
+      }
     }
 
     if (state.items.isEmpty()) {
@@ -127,33 +122,28 @@ private class PagingImpl<Key : Any, Value : Any>(
 
     val appendKey = _nextKey ?: return@withContext
 
-    try {
-      _isInAppend = true
-      _mutator.mutate {
-        val oldLoadState = state.appendLoadState.also { check(it !is LoadState.Loading) }
-        _stateFlow.update { it.copy(appendLoadState = LoadState.Loading) }
-        loadAndHandle(LoadParams.Append(appendKey))
-          .onSuccess { data ->
-            val (loadResult, items) = data
-            loadResult.nextKey?.also { _nextKey = it }
-            _stateFlow.update {
-              it.copy(
-                items = items,
-                appendLoadState = if (loadResult.nextKey == null) LoadState.NotLoading.Complete else LoadState.NotLoading.Incomplete,
-              )
-            }
+    _mutator.mutate {
+      val oldLoadState = state.appendLoadState.also { check(it !is LoadState.Loading) }
+      _stateFlow.update { it.copy(appendLoadState = LoadState.Loading) }
+      loadAndHandle(LoadParams.Append(appendKey))
+        .onSuccess { data ->
+          val (loadResult, items) = data
+          loadResult.nextKey?.also { _nextKey = it }
+          _stateFlow.update {
+            it.copy(
+              items = items,
+              appendLoadState = if (loadResult.nextKey == null) LoadState.NotLoading.Complete else LoadState.NotLoading.Incomplete,
+            )
           }
-          .onFailure { error ->
-            if (error is CancellationException) {
-              _stateFlow.update { it.copy(appendLoadState = oldLoadState) }
-              throw error
-            } else {
-              _stateFlow.update { it.copy(appendLoadState = LoadState.Error(error)) }
-            }
+        }
+        .onFailure { error ->
+          if (error is CancellationException) {
+            _stateFlow.update { it.copy(appendLoadState = oldLoadState) }
+            throw error
+          } else {
+            _stateFlow.update { it.copy(appendLoadState = LoadState.Error(error)) }
           }
-      }
-    } finally {
-      _isInAppend = false
+        }
     }
   }
 
