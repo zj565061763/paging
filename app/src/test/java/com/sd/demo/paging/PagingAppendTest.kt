@@ -197,6 +197,6 @@ fun <T : Any> PagingState<T>.testInitialRefreshSuccess() {
 
 fun <T : Any> PagingState<T>.testInitialAppending() {
   assertEquals(listOf("1"), items)
-  appendLoadState.testLoading()
   refreshLoadState.testComplete()
+  appendLoadState.testLoading()
 }
