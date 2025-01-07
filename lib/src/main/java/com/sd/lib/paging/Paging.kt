@@ -37,7 +37,7 @@ interface FPaging<T : Any> : Paging<T> {
   suspend fun append()
 
   /**
-   * 修改数据，[block]在主线程触发，[block]中不允许再调用[modify]，否则会抛异常
+   * 修改数据，[block]在主线程执行，[block]中不允许再调用[modify]，否则会抛异常
    */
   suspend fun modify(block: suspend (List<T>) -> List<T>)
 }
