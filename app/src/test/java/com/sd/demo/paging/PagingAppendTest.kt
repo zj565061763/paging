@@ -136,6 +136,36 @@ class PagingAppendTest {
       }
     }
   }
+
+  @Test
+  fun `test append to refresh`() = runTest {
+    val paging = testPaging()
+
+    paging.stateFlow.test {
+      paging.append()
+
+      // initial
+      with(awaitItem()) {
+        testItemsEmpty()
+        refreshLoadState.testInComplete()
+        appendLoadState.testInComplete()
+      }
+
+      // refreshing
+      with(awaitItem()) {
+        testItemsEmpty()
+        refreshLoadState.testLoading()
+        appendLoadState.testInComplete()
+      }
+
+      // refresh success
+      with(awaitItem()) {
+        assertEquals(listOf("1"), items)
+        refreshLoadState.testComplete()
+        appendLoadState.testInComplete()
+      }
+    }
+  }
 }
 
 fun <T : Any> PagingState<T>.testInitialRefreshSuccess() {
