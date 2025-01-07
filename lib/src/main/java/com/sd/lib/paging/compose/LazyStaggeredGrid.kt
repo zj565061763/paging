@@ -3,7 +3,6 @@ package com.sd.lib.paging.compose
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridItemScope
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.runtime.Composable
 
@@ -30,15 +29,13 @@ fun <T : Any> LazyStaggeredGridScope.pagingItems(
   span: ((item: T) -> StaggeredGridItemSpan)? = null,
   itemContent: @Composable LazyStaggeredGridItemScope.(item: T) -> Unit,
 ) {
-  items(
-    items = paging.items,
-    key = key,
-    contentType = contentType,
-    span = span,
-  ) { item ->
-    itemContent(item)
-    AppendIfLastItem(paging, item)
-  }
+  pagingItemsIndexed(
+    paging = paging,
+    key = if (key == null) null else { _, item -> key(item) },
+    contentType = { _, item -> contentType(item) },
+    span = if (span == null) null else { _, item -> span(item) },
+    itemContent = { _, item -> itemContent(item) },
+  )
 }
 
 fun <T : Any> LazyStaggeredGridScope.pagingItemsIndexed(
@@ -55,6 +52,6 @@ fun <T : Any> LazyStaggeredGridScope.pagingItemsIndexed(
     span = span,
   ) { index, item ->
     itemContent(index, item)
-    AppendIfLastItem(paging, item)
+    AppendIfLastIndex(paging, index)
   }
 }

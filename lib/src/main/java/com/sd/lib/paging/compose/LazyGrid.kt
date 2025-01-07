@@ -4,7 +4,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
 import androidx.compose.foundation.lazy.grid.LazyGridScope
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.Composable
 
@@ -31,15 +30,13 @@ fun <T : Any> LazyGridScope.pagingItems(
   span: (LazyGridItemSpanScope.(item: T) -> GridItemSpan)? = null,
   itemContent: @Composable LazyGridItemScope.(item: T) -> Unit,
 ) {
-  items(
-    items = paging.items,
-    key = key,
-    contentType = contentType,
-    span = span,
-  ) { item ->
-    itemContent(item)
-    AppendIfLastItem(paging, item)
-  }
+  pagingItemsIndexed(
+    paging = paging,
+    key = if (key == null) null else { _, item -> key(item) },
+    contentType = { _, item -> contentType(item) },
+    span = if (span == null) null else { _, item -> span(item) },
+    itemContent = { _, item -> itemContent(item) },
+  )
 }
 
 fun <T : Any> LazyGridScope.pagingItemsIndexed(
@@ -56,6 +53,6 @@ fun <T : Any> LazyGridScope.pagingItemsIndexed(
     span = span,
   ) { index, item ->
     itemContent(index, item)
-    AppendIfLastItem(paging, item)
+    AppendIfLastIndex(paging, index)
   }
 }

@@ -5,8 +5,11 @@ import androidx.compose.runtime.LaunchedEffect
 import com.sd.lib.paging.LoadState
 
 @Composable
-internal fun <T : Any> AppendIfLastItem(paging: PagingPresenter<T>, item: T) {
-  if (item !== paging.items.lastOrNull()) return
+internal fun AppendIfLastIndex(paging: PagingPresenter<*>, index: Int) {
+  paging.items.lastIndex.also { lastIndex ->
+    if (lastIndex < 0) return
+    if (lastIndex != index) return
+  }
 
   val isRefreshReady = with(paging) {
     refreshLoadState == LoadState.NotLoading.Complete

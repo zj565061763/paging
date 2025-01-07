@@ -2,7 +2,6 @@ package com.sd.lib.paging.compose
 
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 
@@ -26,14 +25,12 @@ fun <T : Any> LazyListScope.pagingItems(
   contentType: (item: T) -> Any? = { null },
   itemContent: @Composable LazyItemScope.(item: T) -> Unit,
 ) {
-  items(
-    items = paging.items,
-    key = key,
-    contentType = contentType,
-  ) { item ->
-    itemContent(item)
-    AppendIfLastItem(paging, item)
-  }
+  pagingItemsIndexed(
+    paging = paging,
+    key = if (key == null) null else { _, item -> key(item) },
+    contentType = { _, item -> contentType(item) },
+    itemContent = { _, item -> itemContent(item) },
+  )
 }
 
 fun <T : Any> LazyListScope.pagingItemsIndexed(
@@ -48,6 +45,6 @@ fun <T : Any> LazyListScope.pagingItemsIndexed(
     contentType = contentType,
   ) { index, item ->
     itemContent(index, item)
-    AppendIfLastItem(paging, item)
+    AppendIfLastIndex(paging, index)
   }
 }
