@@ -86,11 +86,8 @@ private class PagingImpl<Key : Any, Value : Any>(
   override suspend fun append() {
     if (isInModifyBlock()) error("Can not call append in the modify block.")
     withContext(Dispatchers.Main) {
-      if (_mutator.isMutating) {
-        // 如果正在加载，抛出异常，取消当前协程
-        throw CancellationException()
-      }
-
+      // 如果正在加载，抛出异常，取消当前协程
+      if (_mutator.isMutating) throw CancellationException()
       if (state.items.isEmpty()) {
         refresh()
       } else {
