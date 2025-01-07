@@ -86,6 +86,27 @@ class PagingAppendTest {
   }
 
   @Test
+  fun `test append load none`() = runTest {
+    val paging = testPagingLoadNone(loadNonePage = 2)
+    paging.refresh()
+
+    paging.stateFlow.test {
+      // initial
+      awaitItem().testInitialRefreshSuccess()
+
+      runCatching { paging.append() }.also {
+        assertEquals(true, it.exceptionOrNull() is CancellationException)
+      }
+
+      // appending
+      awaitItem().testInitialAppending()
+
+      // initial
+      awaitItem().testInitialRefreshSuccess()
+    }
+  }
+
+  @Test
   fun `test append when appending`() = runTest {
     val paging = testPaging()
     paging.refresh()
