@@ -98,12 +98,19 @@ private class PagingImpl<Key : Any, Value : Any>(
 
   override suspend fun modify(block: suspend (List<Value>) -> List<Value>) {
     if (isInModifyBlock()) error("Can not call modify in the modify block.")
-    withContext(Dispatchers.Main + ModifyElement(this@PagingImpl)) {
+    withContext(Dispatchers.Main) {
       _mutator.withLock {
-        val newItems = block(state.items)
-        _stateFlow.update {
-          it.copy(items = newItems)
-        }
+        doModify(block)
+      }
+    }
+  }
+
+  private suspend fun doModify(block: suspend (List<Value>) -> List<Value>) {
+    withContext(ModifyElement(this@PagingImpl)) {
+      block(state.items)
+    }.also { newItems ->
+      _stateFlow.update {
+        it.copy(items = newItems)
       }
     }
   }
