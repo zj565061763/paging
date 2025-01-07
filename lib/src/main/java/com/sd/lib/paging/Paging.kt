@@ -76,8 +76,44 @@ private class PagingImpl<Key : Any, Value : Any>(
   override val state: PagingState<Value> get() = _stateFlow.value
   override val stateFlow: StateFlow<PagingState<Value>> get() = _stateFlow.asStateFlow()
 
-  override suspend fun refresh(): Unit = withContext(Dispatchers.Main) {
+  override suspend fun refresh() {
     if (isInModifyBlock()) error("Can not call refresh in the modify block.")
+    withContext(Dispatchers.Main) {
+      doRefresh()
+    }
+  }
+
+  override suspend fun append() {
+    if (isInModifyBlock()) error("Can not call append in the modify block.")
+    withContext(Dispatchers.Main) {
+      if (_mutator.isMutating) {
+        // 如果正在加载，抛出异常，取消当前协程
+        throw CancellationException()
+      }
+
+      if (state.items.isEmpty()) {
+        refresh()
+      } else {
+        doAppend()
+      }
+    }
+  }
+
+  override suspend fun modify(block: suspend (List<Value>) -> List<Value>) {
+    if (isInModifyBlock()) error("Can not call modify in the modify block.")
+    withContext(Dispatchers.Main + ModifyElement(this@PagingImpl)) {
+      _mutator.withLock {
+        val newItems = block(state.items)
+        _stateFlow.update {
+          it.copy(items = newItems)
+        }
+      }
+    }
+  }
+
+  private suspend fun isInModifyBlock(): Boolean = currentCoroutineContext()[ModifyElement]?.tag === this@PagingImpl
+
+  private suspend fun doRefresh() {
     _mutator.mutate {
       val oldLoadState = state.refreshLoadState.also { check(it !is LoadState.Loading) }
       _stateFlow.update { it.copy(refreshLoadState = LoadState.Loading) }
@@ -104,22 +140,8 @@ private class PagingImpl<Key : Any, Value : Any>(
     }
   }
 
-  override suspend fun append(): Unit = withContext(Dispatchers.Main) {
-    if (isInModifyBlock()) error("Can not call append in the modify block.")
-
-    if (_mutator.isMutating) {
-      // 如果正在加载，抛出异常，取消当前协程
-      throw CancellationException()
-    }
-
-    if (state.items.isEmpty()) {
-      // 如果数据为空，触发刷新
-      refresh()
-      return@withContext
-    }
-
-    val appendKey = _nextKey ?: return@withContext
-
+  private suspend fun doAppend() {
+    val appendKey = _nextKey ?: return
     _mutator.mutate {
       val oldLoadState = state.appendLoadState.also { check(it !is LoadState.Loading) }
       _stateFlow.update { it.copy(appendLoadState = LoadState.Loading) }
@@ -144,20 +166,6 @@ private class PagingImpl<Key : Any, Value : Any>(
         }
     }
   }
-
-  override suspend fun modify(block: suspend (List<Value>) -> List<Value>) {
-    if (isInModifyBlock()) error("Can not call modify in the modify block.")
-    withContext(Dispatchers.Main + ModifyElement(this@PagingImpl)) {
-      _mutator.withLock {
-        val newItems = block(state.items)
-        _stateFlow.update {
-          it.copy(items = newItems)
-        }
-      }
-    }
-  }
-
-  private suspend fun isInModifyBlock(): Boolean = currentCoroutineContext()[ModifyElement]?.tag === this@PagingImpl
 
   /** 加载分页数据，并返回总数据 */
   private suspend fun loadAndHandle(loadParams: LoadParams<Key>): Result<Pair<LoadResult.Page<Key, Value>, List<Value>>> {
