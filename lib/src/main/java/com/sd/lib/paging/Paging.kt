@@ -188,12 +188,12 @@ private class PagingImpl<Key : Any, Value : Any>(
       }
     }
   }
-}
 
-private class ModifyElement(
-  val tag: FPaging<*>,
-) : AbstractCoroutineContextElement(ModifyElement) {
-  companion object Key : CoroutineContext.Key<ModifyElement>
+  private class ModifyElement(
+    val tag: FPaging<*>,
+  ) : AbstractCoroutineContextElement(ModifyElement) {
+    companion object Key : CoroutineContext.Key<ModifyElement>
+  }
 }
 
 //-------------------- Mutator --------------------
