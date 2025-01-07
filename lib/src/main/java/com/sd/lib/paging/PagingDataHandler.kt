@@ -45,14 +45,18 @@ open class DefaultPagingDataHandler<Key : Any, Value : Any>(
     }
   }
 
-  /** 刷新数据，在[refreshDispatcher]上执行 */
+  /**
+   * 刷新数据，在[refreshDispatcher]上执行，如果[refreshDispatcher]为null，则在主线程执行
+   */
   protected open suspend fun refreshData(
     totalData: List<Value>,
     params: LoadParams<Key>,
     pageData: List<Value>,
   ): List<Value> = pageData
 
-  /** 添加尾部数据，在[appendDispatcher]上执行 */
+  /**
+   * 添加尾部数据，在[appendDispatcher]上执行，如果[appendDispatcher]为null，则在主线程执行
+   */
   protected open suspend fun appendData(
     totalData: List<Value>,
     params: LoadParams<Key>,
