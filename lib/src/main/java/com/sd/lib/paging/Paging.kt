@@ -38,8 +38,7 @@ interface FPaging<T : Any> : Paging<T> {
   suspend fun append()
 
   /**
-   * 修改数据，[block]在主线程触发，
-   * 注意：[block]中不允许再调用[modify]，否则会抛异常[NestModifyException]
+   * 修改数据，[block]在主线程触发，[block]中不允许再调用[modify]，否则会抛异常
    */
   suspend fun modify(block: suspend (List<T>) -> List<T>)
 }
@@ -79,6 +78,7 @@ private class PagingImpl<Key : Any, Value : Any>(
   override val stateFlow: StateFlow<PagingState<Value>> get() = _stateFlow.asStateFlow()
 
   override suspend fun refresh(): Unit = withContext(Dispatchers.Main) {
+    if (isInModifyBlock()) error("Can not call refresh in the modify block.")
     _mutator.mutate {
       val oldLoadState = state.refreshLoadState.also { check(it !is LoadState.Loading) }
       _stateFlow.update { it.copy(refreshLoadState = LoadState.Loading) }
@@ -106,8 +106,10 @@ private class PagingImpl<Key : Any, Value : Any>(
   }
 
   override suspend fun append(): Unit = withContext(Dispatchers.Main) {
+    if (isInModifyBlock()) error("Can not call append in the modify block.")
+
     if (_mutator.mutex.isLocked) {
-      // 如果正在加载中，抛出异常，取消当前协程
+      // 如果正在加载或者修改数据，抛出异常，取消当前协程
       throw CancellationException()
     }
 
@@ -145,9 +147,7 @@ private class PagingImpl<Key : Any, Value : Any>(
   }
 
   override suspend fun modify(block: suspend (List<Value>) -> List<Value>) {
-    if (currentCoroutineContext()[ModifyElement]?.tag === this@PagingImpl) {
-      throw NestModifyException("Can not call modify in the modify block.")
-    }
+    if (isInModifyBlock()) error("Can not call modify in the modify block.")
     withContext(Dispatchers.Main + ModifyElement(this@PagingImpl)) {
       _mutator.mutex.withLock {
         val newItems = block(state.items)
@@ -157,6 +157,8 @@ private class PagingImpl<Key : Any, Value : Any>(
       }
     }
   }
+
+  private suspend fun isInModifyBlock(): Boolean = currentCoroutineContext()[ModifyElement]?.tag === this@PagingImpl
 
   /** 加载分页数据，并返回总数据 */
   private suspend fun loadAndHandle(loadParams: LoadParams<Key>): Result<Pair<LoadResult.Page<Key, Value>, List<Value>>> {
@@ -182,9 +184,6 @@ private class ModifyElement(
 ) : AbstractCoroutineContextElement(ModifyElement) {
   companion object Key : CoroutineContext.Key<ModifyElement>
 }
-
-/** 嵌套修改异常 */
-private class NestModifyException(message: String) : IllegalStateException(message)
 
 //-------------------- Mutator --------------------
 
