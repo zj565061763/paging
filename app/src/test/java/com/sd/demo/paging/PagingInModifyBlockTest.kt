@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-class InModifyBlockTest {
+class PagingInModifyBlockTest {
   @get:Rule
   val mainDispatcherRule = MainDispatcherRule()
 
