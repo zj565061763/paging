@@ -5,7 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import com.sd.lib.paging.LoadState
 
 @Composable
-internal fun AppendIfLastIndex(paging: PagingPresenter<*>, index: Int) {
+internal fun PagingAppendIfLastIndex(paging: PagingPresenter<*>, index: Int) {
   paging.items.lastIndex.also { lastIndex ->
     if (lastIndex < 0) return
     if (lastIndex != index) return

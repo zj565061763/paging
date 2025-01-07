@@ -45,6 +45,6 @@ fun <T : Any> LazyListScope.pagingItemsIndexed(
     contentType = contentType,
   ) { index, item ->
     itemContent(index, item)
-    AppendIfLastIndex(paging, index)
+    PagingAppendIfLastIndex(paging, index)
   }
 }

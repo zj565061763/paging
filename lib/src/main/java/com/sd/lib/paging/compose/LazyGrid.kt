@@ -53,6 +53,6 @@ fun <T : Any> LazyGridScope.pagingItemsIndexed(
     span = span,
   ) { index, item ->
     itemContent(index, item)
-    AppendIfLastIndex(paging, index)
+    PagingAppendIfLastIndex(paging, index)
   }
 }
