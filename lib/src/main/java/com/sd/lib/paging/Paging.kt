@@ -89,7 +89,7 @@ private class PagingImpl<Key : Any, Value : Any>(
       // 如果正在加载，抛出异常，取消当前协程
       if (_mutator.isMutating) throw CancellationException()
       if (state.items.isEmpty()) {
-        refresh()
+        doRefresh()
       } else {
         doAppend()
       }
