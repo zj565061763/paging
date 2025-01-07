@@ -28,6 +28,14 @@ fun testPagingNoMoreData(noMoreDataPage: Int): FPaging<String> {
   )
 }
 
+fun testPagingLoadNone(loadNonePage: Int): FPaging<String> {
+  require(loadNonePage > 0)
+  return FPaging(
+    refreshKey = 1,
+    pagingSource = TestLoadNonePagingSource(loadNonePage = loadNonePage),
+  )
+}
+
 private class TestPagingSource : KeyIntPagingSource<String>() {
   override suspend fun loadImpl(params: LoadParams<Int>): List<String> {
     delay(5_000)
@@ -54,6 +62,19 @@ private class TestNoMoreDataPagingSource(
     delay(5_000)
     return if (params.key >= noMoreDataPage) {
       emptyList()
+    } else {
+      listOf(params.key.toString())
+    }
+  }
+}
+
+private class TestLoadNonePagingSource(
+  private val loadNonePage: Int,
+) : KeyIntPagingSource<String>() {
+  override suspend fun loadImpl(params: LoadParams<Int>): List<String>? {
+    delay(5_000)
+    return if (params.key == loadNonePage) {
+      null
     } else {
       listOf(params.key.toString())
     }

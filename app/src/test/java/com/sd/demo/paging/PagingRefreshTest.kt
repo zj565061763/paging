@@ -2,6 +2,7 @@ package com.sd.demo.paging
 
 import app.cash.turbine.test
 import com.sd.lib.paging.PagingState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -76,6 +77,25 @@ class PagingRefreshTest {
         refreshLoadState.testComplete()
         appendLoadState.testComplete()
       }
+    }
+  }
+
+  @Test
+  fun `test refresh load none`() = runTest {
+    val paging = testPagingLoadNone(loadNonePage = 1)
+    paging.stateFlow.test {
+      // initial
+      awaitItem().testInitial()
+
+      runCatching { paging.refresh() }.also {
+        assertEquals(true, it.exceptionOrNull() is CancellationException)
+      }
+
+      // refreshing
+      awaitItem().testInitialRefreshing()
+
+      // refresh success
+      awaitItem().testInitial()
     }
   }
 
