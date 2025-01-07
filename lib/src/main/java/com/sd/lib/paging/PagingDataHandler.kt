@@ -29,14 +29,14 @@ open class DefaultPagingDataHandler<Key : Any, Value : Any> : PagingDataHandler<
     is LoadParams.Append -> handleAppendData(totalData, params, pageData)
   }
 
-  /** 处理[LoadParams.Refresh]的数据 */
+  /** 处理[LoadParams.Refresh]数据 */
   protected open suspend fun handleRefreshData(
     totalData: List<Value>,
     params: LoadParams.Refresh<Key>,
     pageData: List<Value>,
   ): List<Value> = pageData
 
-  /** 处理[LoadParams.Append]的数据 */
+  /** 处理[LoadParams.Append]数据 */
   protected open suspend fun handleAppendData(
     totalData: List<Value>,
     params: LoadParams.Append<Key>,
