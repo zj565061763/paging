@@ -22,21 +22,21 @@ class PagingRefreshTest {
     paging.stateFlow.test {
       paging.refresh()
 
-      // 初始状态
+      // initial
       with(awaitItem()) {
         assertEquals(emptyList<String>(), items)
         assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
         assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
       }
 
-      // 加载中
+      // refreshing
       with(awaitItem()) {
         assertEquals(emptyList<String>(), items)
         assertEquals(LoadState.Loading, refreshLoadState)
         assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
       }
 
-      // 加载成功
+      // refresh success
       with(awaitItem()) {
         assertEquals(listOf("1"), items)
         assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
@@ -51,21 +51,21 @@ class PagingRefreshTest {
     paging.stateFlow.test {
       paging.refresh()
 
-      // 初始状态
+      // initial
       with(awaitItem()) {
         assertEquals(emptyList<String>(), items)
         assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
         assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
       }
 
-      // 加载中
+      // refreshing
       with(awaitItem()) {
         assertEquals(emptyList<String>(), items)
         assertEquals(LoadState.Loading, refreshLoadState)
         assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
       }
 
-      // 加载失败
+      // refresh error
       with(awaitItem()) {
         assertEquals(emptyList<String>(), items)
         assertEquals("error", (refreshLoadState as LoadState.Error).error.message)
@@ -79,41 +79,96 @@ class PagingRefreshTest {
     val paging = testPaging()
 
     paging.stateFlow.test {
-      launch {
-        paging.refresh()
-      }.also { runCurrent() }
-
+      launch { paging.refresh() }.also { runCurrent() }
       paging.refresh()
 
-      // 初始状态
+      // initial
       with(awaitItem()) {
         assertEquals(emptyList<String>(), items)
         assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
         assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
       }
 
-      // 加载中
+      // refreshing
       with(awaitItem()) {
         assertEquals(emptyList<String>(), items)
         assertEquals(LoadState.Loading, refreshLoadState)
         assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
       }
 
-      // 初始状态
+      // initial
       with(awaitItem()) {
         assertEquals(emptyList<String>(), items)
         assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
         assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
       }
 
-      // 加载中
+      // refreshing
       with(awaitItem()) {
         assertEquals(emptyList<String>(), items)
         assertEquals(LoadState.Loading, refreshLoadState)
         assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
       }
 
-      // 加载成功
+      // refresh success
+      with(awaitItem()) {
+        assertEquals(listOf("1"), items)
+        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
+        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+      }
+    }
+  }
+
+  @Test
+  fun `test refresh when appending`() = runTest {
+    val paging = testPaging()
+
+    paging.stateFlow.test {
+      paging.refresh()
+      launch { paging.append() }.also { runCurrent() }
+      paging.refresh()
+
+      // initial
+      with(awaitItem()) {
+        assertEquals(emptyList<String>(), items)
+        assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
+        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+      }
+      // refreshing
+      with(awaitItem()) {
+        assertEquals(emptyList<String>(), items)
+        assertEquals(LoadState.Loading, refreshLoadState)
+        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+      }
+      // refresh success
+      with(awaitItem()) {
+        assertEquals(listOf("1"), items)
+        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
+        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+      }
+
+      // appending
+      with(awaitItem()) {
+        assertEquals(listOf("1"), items)
+        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
+        assertEquals(LoadState.Loading, appendLoadState)
+      }
+
+      // refresh success
+      with(awaitItem()) {
+        assertEquals(listOf("1"), items)
+        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
+        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+      }
+
+      // refreshing
+      with(awaitItem()) {
+        assertEquals(listOf("1"), items)
+        assertEquals(LoadState.Loading, refreshLoadState)
+        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+      }
+
+      // refresh success
       with(awaitItem()) {
         assertEquals(listOf("1"), items)
         assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
