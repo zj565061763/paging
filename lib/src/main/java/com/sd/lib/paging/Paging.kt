@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -200,51 +199,14 @@ private class ModifyElement(
 //-------------------- Mutator --------------------
 
 private class Mutator {
-  private class Mutator(val priority: Int, val job: Job) {
-    fun canInterrupt(other: Mutator) = priority >= other.priority
+  private val _mutex = Mutex()
+  private var _job: Job? = null
 
-    fun cancel() = job.cancel(MutationInterruptedException())
+  suspend fun <R> mutate(block: suspend () -> R): R = coroutineScope {
+    _job?.cancel()
+    _job = currentCoroutineContext()[Job]
+    withLock { block() }
   }
 
-  private val currentMutator = AtomicReference<Mutator?>(null)
-  private val mutex = Mutex()
-
-  private fun tryMutateOrCancel(mutator: Mutator) {
-    while (true) {
-      val oldMutator = currentMutator.get()
-      if (oldMutator == null || mutator.canInterrupt(oldMutator)) {
-        if (currentMutator.compareAndSet(oldMutator, mutator)) {
-          oldMutator?.cancel()
-          break
-        }
-      } else throw CancellationException("Current mutation had a higher priority")
-    }
-  }
-
-  suspend fun <R> mutate(
-    priority: Int = 0,
-    block: suspend () -> R,
-  ) = coroutineScope {
-    val mutator = Mutator(priority, coroutineContext[Job]!!)
-
-    tryMutateOrCancel(mutator)
-
-    mutex.withLock {
-      try {
-        block()
-      } finally {
-        currentMutator.compareAndSet(mutator, null)
-      }
-    }
-  }
-
-  suspend inline fun <T> withLock(action: () -> T): T = mutex.withLock(action = action)
-}
-
-private class MutationInterruptedException : CancellationException("Mutation interrupted") {
-  override fun fillInStackTrace(): Throwable {
-    // Avoid null.clone() on Android <= 6.0 when accessing stackTrace
-    stackTrace = emptyArray()
-    return this
-  }
+  suspend inline fun <T> withLock(action: () -> T): T = _mutex.withLock(action = action)
 }
