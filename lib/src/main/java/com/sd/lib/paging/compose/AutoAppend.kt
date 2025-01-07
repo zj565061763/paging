@@ -7,18 +7,17 @@ import com.sd.lib.paging.LoadState
 @Composable
 internal fun <T : Any> AppendIfLastItem(paging: PagingPresenter<T>, item: T) {
   if (item !== paging.items.lastOrNull()) return
-  when (paging.refreshLoadState) {
-    LoadState.NotLoading.Complete -> AppendIfInComplete(paging)
-    is LoadState.Error -> AppendIfInComplete(paging)
-    else -> {}
-  }
-}
 
-@Composable
-private fun AppendIfInComplete(paging: PagingPresenter<*>) {
-  LaunchedEffect(paging) {
-    if (paging.appendLoadState == LoadState.NotLoading.Incomplete) {
-      paging.append()
+  val isRefreshReady = with(paging) {
+    refreshLoadState == LoadState.NotLoading.Complete
+      || refreshLoadState is LoadState.Error
+  }
+
+  if (isRefreshReady) {
+    LaunchedEffect(paging) {
+      if (paging.appendLoadState == LoadState.NotLoading.Incomplete) {
+        paging.append()
+      }
     }
   }
 }
