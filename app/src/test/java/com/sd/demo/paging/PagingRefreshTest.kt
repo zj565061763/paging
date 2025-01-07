@@ -47,7 +47,7 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh error`() = runTest {
-    val paging = testPaging(pagingSource = TestErrorPagingSource())
+    val paging = testErrorPaging()
     paging.stateFlow.test {
       paging.refresh()
 
