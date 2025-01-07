@@ -1,7 +1,6 @@
 package com.sd.demo.paging
 
 import app.cash.turbine.test
-import com.sd.lib.paging.LoadState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -23,24 +22,16 @@ class PagingRefreshTest {
       paging.refresh()
 
       // initial
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitial()
 
       // refreshing
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(LoadState.Loading, refreshLoadState)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitialRefreshing()
 
       // refresh success
       with(awaitItem()) {
         assertEquals(listOf("1"), items)
-        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+        refreshLoadState.testComplete()
+        appendLoadState.testInComplete()
       }
     }
   }
@@ -52,24 +43,16 @@ class PagingRefreshTest {
       paging.refresh()
 
       // initial
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitial()
 
       // refreshing
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(LoadState.Loading, refreshLoadState)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitialRefreshing()
 
       // refresh error
       with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals("error", (refreshLoadState as LoadState.Error).error.message)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+        testItemsEmpty()
+        refreshLoadState.testError("error")
+        appendLoadState.testInComplete()
       }
     }
   }
@@ -81,24 +64,16 @@ class PagingRefreshTest {
       paging.refresh()
 
       // initial
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitial()
 
       // refreshing
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(LoadState.Loading, refreshLoadState)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitialRefreshing()
 
       // refresh success
       with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(true, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+        testItemsEmpty()
+        refreshLoadState.testComplete()
+        appendLoadState.testComplete()
       }
     }
   }
@@ -112,38 +87,22 @@ class PagingRefreshTest {
       paging.refresh()
 
       // initial
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitial()
 
       // refreshing
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(LoadState.Loading, refreshLoadState)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitialRefreshing()
 
       // initial
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitial()
 
       // refreshing
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(LoadState.Loading, refreshLoadState)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitialRefreshing()
 
       // refresh success
       with(awaitItem()) {
         assertEquals(listOf("1"), items)
-        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+        refreshLoadState.testComplete()
+        appendLoadState.testInComplete()
       }
     }
   }
@@ -158,50 +117,42 @@ class PagingRefreshTest {
       paging.refresh()
 
       // initial
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitial()
       // refreshing
-      with(awaitItem()) {
-        assertEquals(emptyList<String>(), items)
-        assertEquals(LoadState.Loading, refreshLoadState)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
-      }
+      awaitItem().testInitialRefreshing()
       // refresh success
       with(awaitItem()) {
         assertEquals(listOf("1"), items)
-        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+        refreshLoadState.testComplete()
+        appendLoadState.testInComplete()
       }
 
       // appending
       with(awaitItem()) {
         assertEquals(listOf("1"), items)
-        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(LoadState.Loading, appendLoadState)
+        refreshLoadState.testComplete()
+        appendLoadState.testLoading()
       }
 
       // refresh success
       with(awaitItem()) {
         assertEquals(listOf("1"), items)
-        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+        refreshLoadState.testComplete()
+        appendLoadState.testInComplete()
       }
 
       // refreshing
       with(awaitItem()) {
         assertEquals(listOf("1"), items)
-        assertEquals(LoadState.Loading, refreshLoadState)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+        refreshLoadState.testLoading()
+        appendLoadState.testInComplete()
       }
 
       // refresh success
       with(awaitItem()) {
         assertEquals(listOf("1"), items)
-        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
-        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+        refreshLoadState.testComplete()
+        appendLoadState.testInComplete()
       }
     }
   }
