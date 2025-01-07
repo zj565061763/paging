@@ -10,16 +10,24 @@ class InModifyBlockTest {
   val mainDispatcherRule = MainDispatcherRule()
 
   @Test
+  fun `test modify`() = runTest {
+    val paging = testPaging()
+    paging.modify { listOf("a") }
+    assertEquals(listOf("a"), paging.state.items)
+  }
+
+  @Test
   fun `test modify in modify block`() = runTest {
     val paging = testPaging()
     paging.modify {
       runCatching {
-        paging.modify { emptyList() }
+        paging.modify { listOf("b") }
       }.also {
         assertEquals("Can not call modify in the modify block.", it.exceptionOrNull()!!.message)
       }
-      emptyList()
+      listOf("a")
     }
+    assertEquals(listOf("a"), paging.state.items)
   }
 
   @Test
@@ -31,8 +39,9 @@ class InModifyBlockTest {
       }.also {
         assertEquals("Can not call refresh in the modify block.", it.exceptionOrNull()!!.message)
       }
-      emptyList()
+      listOf("a")
     }
+    assertEquals(listOf("a"), paging.state.items)
   }
 
   @Test
@@ -44,7 +53,8 @@ class InModifyBlockTest {
       }.also {
         assertEquals("Can not call append in the modify block.", it.exceptionOrNull()!!.message)
       }
-      emptyList()
+      listOf("a")
     }
+    assertEquals(listOf("a"), paging.state.items)
   }
 }
