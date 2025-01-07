@@ -41,7 +41,5 @@ open class DefaultPagingDataHandler<Key : Any, Value : Any> : PagingDataHandler<
     totalData: List<Value>,
     params: LoadParams.Append<Key>,
     pageData: List<Value>,
-  ): List<Value> = withContext(Dispatchers.IO) {
-    if (pageData.isNotEmpty()) totalData + pageData else totalData
-  }
+  ): List<Value> = if (pageData.isEmpty()) totalData else withContext(Dispatchers.IO) { totalData + pageData }
 }
