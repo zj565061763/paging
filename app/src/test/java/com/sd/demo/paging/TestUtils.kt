@@ -12,10 +12,11 @@ fun testPaging(): FPaging<String> {
   )
 }
 
-fun testPagingError(): FPaging<String> {
+fun testPagingError(errorPage: Int): FPaging<String> {
+  require(errorPage > 0)
   return FPaging(
     refreshKey = 1,
-    pagingSource = TestErrorPagingSource(),
+    pagingSource = TestErrorPagingSource(errorPage = errorPage),
   )
 }
 
@@ -34,10 +35,15 @@ private class TestPagingSource : KeyIntPagingSource<String>() {
   }
 }
 
-private class TestErrorPagingSource : KeyIntPagingSource<String>() {
+private class TestErrorPagingSource(
+  private val errorPage: Int,
+) : KeyIntPagingSource<String>() {
   override suspend fun loadImpl(params: LoadParams<Int>): List<String> {
     delay(5_000)
-    error("error")
+    if (params.key == errorPage) {
+      error("error")
+    }
+    return listOf(params.key.toString())
   }
 }
 
