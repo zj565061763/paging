@@ -47,7 +47,7 @@ class PagingRefreshTest {
 
   @Test
   fun `test refresh error`() = runTest {
-    val paging = testErrorPaging()
+    val paging = testPagingError()
     paging.stateFlow.test {
       paging.refresh()
 
@@ -70,6 +70,35 @@ class PagingRefreshTest {
         assertEquals(emptyList<String>(), items)
         assertEquals("error", (refreshLoadState as LoadState.Error).error.message)
         assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+      }
+    }
+  }
+
+  @Test
+  fun `test refresh no more data`() = runTest {
+    val paging = testPagingNoMoreData(noMoreDataPage = 1)
+    paging.stateFlow.test {
+      paging.refresh()
+
+      // initial
+      with(awaitItem()) {
+        assertEquals(emptyList<String>(), items)
+        assertEquals(false, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
+        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+      }
+
+      // refreshing
+      with(awaitItem()) {
+        assertEquals(emptyList<String>(), items)
+        assertEquals(LoadState.Loading, refreshLoadState)
+        assertEquals(false, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
+      }
+
+      // refresh success
+      with(awaitItem()) {
+        assertEquals(emptyList<String>(), items)
+        assertEquals(true, (refreshLoadState as LoadState.NotLoading).endOfPaginationReached)
+        assertEquals(true, (appendLoadState as LoadState.NotLoading).endOfPaginationReached)
       }
     }
   }

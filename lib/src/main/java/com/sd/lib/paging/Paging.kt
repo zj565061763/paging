@@ -94,7 +94,7 @@ private class PagingImpl<Key : Any, Value : Any>(
               it.copy(
                 items = items,
                 refreshLoadState = LoadState.NotLoading.Complete,
-                appendLoadState = LoadState.NotLoading.Incomplete,
+                appendLoadState = if (loadResult.nextKey == null) LoadState.NotLoading.Complete else LoadState.NotLoading.Incomplete,
               )
             }
           }
