@@ -1,6 +1,7 @@
 package com.sd.demo.paging
 
 import app.cash.turbine.test
+import com.sd.lib.paging.PagingState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -19,10 +20,10 @@ class PagingRefreshTest {
     val paging = testPaging()
 
     paging.stateFlow.test {
-      paging.refresh()
-
       // initial
       awaitItem().testInitial()
+
+      paging.refresh()
 
       // refreshing
       awaitItem().testInitialRefreshing()
@@ -40,10 +41,10 @@ class PagingRefreshTest {
   fun `test refresh error`() = runTest {
     val paging = testPagingError(errorPage = 1)
     paging.stateFlow.test {
-      paging.refresh()
-
       // initial
       awaitItem().testInitial()
+
+      paging.refresh()
 
       // refreshing
       awaitItem().testInitialRefreshing()
@@ -61,10 +62,10 @@ class PagingRefreshTest {
   fun `test refresh no more data`() = runTest {
     val paging = testPagingNoMoreData(noMoreDataPage = 1)
     paging.stateFlow.test {
-      paging.refresh()
-
       // initial
       awaitItem().testInitial()
+
+      paging.refresh()
 
       // refreshing
       awaitItem().testInitialRefreshing()
@@ -83,11 +84,11 @@ class PagingRefreshTest {
     val paging = testPaging()
 
     paging.stateFlow.test {
-      launch { paging.refresh() }.also { runCurrent() }
-      paging.refresh()
-
       // initial
       awaitItem().testInitial()
+
+      launch { paging.refresh() }.also { runCurrent() }
+      paging.refresh()
 
       // refreshing
       awaitItem().testInitialRefreshing()
@@ -112,12 +113,13 @@ class PagingRefreshTest {
     val paging = testPaging()
 
     paging.stateFlow.test {
+      // initial
+      awaitItem().testInitial()
+
       paging.refresh()
       launch { paging.append() }.also { runCurrent() }
       paging.refresh()
 
-      // initial
-      awaitItem().testInitial()
       // refreshing
       awaitItem().testInitialRefreshing()
       // refresh success
@@ -156,4 +158,16 @@ class PagingRefreshTest {
       }
     }
   }
+}
+
+private fun <T : Any> PagingState<T>.testInitial() {
+  testItemsEmpty()
+  refreshLoadState.testInComplete()
+  appendLoadState.testInComplete()
+}
+
+private fun <T : Any> PagingState<T>.testInitialRefreshing() {
+  testItemsEmpty()
+  refreshLoadState.testLoading()
+  appendLoadState.testInComplete()
 }
